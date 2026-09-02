@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { AppError } from '@/lib/errors'
 import { fail } from './response'
 import { requireUser } from '@/lib/supabase/server'
+import { assertPermission } from '@/lib/auth/guards'
+import type { Permission, PermissionScope } from '@/lib/auth/permissions'
 
 type Context<TBody, TQuery> = {
   request: NextRequest
@@ -15,6 +17,17 @@ type Context<TBody, TQuery> = {
 type HandlerOptions<TBody, TQuery> = {
   /** Reject anonymous callers before the handler runs. Defaults to true. */
   auth?: boolean
+  /**
+   * Reject callers whose role does not grant this permission. `scope` reads
+   * the org or flat id out of the parsed body, query or route params, so the
+   * check is against the specific building rather than "anywhere".
+   */
+  permission?: Permission
+  scope?: (ctx: {
+    body: TBody
+    query: TQuery
+    params: Record<string, string>
+  }) => PermissionScope
   /** z.ZodType<Output, Def, Input> — the third slot keeps defaults working. */
   body?: z.ZodType<TBody, z.ZodTypeDef, unknown>
   query?: z.ZodType<TQuery, z.ZodTypeDef, unknown>
@@ -57,6 +70,11 @@ export function route<TBody = undefined, TQuery = undefined>(
       if (options.query) {
         const raw = Object.fromEntries(request.nextUrl.searchParams.entries())
         query = parseOrThrow(options.query, raw, 'query')
+      }
+
+      if (options.permission) {
+        const scope = options.scope?.({ body, query, params: segment.params ?? {} }) ?? {}
+        await assertPermission(options.permission, scope)
       }
 
       return await handler({

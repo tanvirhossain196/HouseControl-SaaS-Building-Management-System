@@ -6,9 +6,10 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 3 of 15.** Phase 1 delivered the design system and public
+**This repository is at Phase 4 of 15.** Phase 1 delivered the design system and public
 pages, Phase 2 the architecture and PostgreSQL schema, Phase 3 verified-only
-authentication. Role-based dashboards are next (Phase 4).
+authentication, Phase 4 role-based access and the four dashboards. Building and flat
+management is next (Phase 5).
 
 ---
 
@@ -35,6 +36,7 @@ npm run db:seed      # one building, four flats, a September ledger
 | --- | --- |
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
+| `npm run test:permissions` | 15 checks over the permission matrix |
 | `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
 | `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
 
@@ -53,7 +55,12 @@ Requires Node 18.18+ (Node 20 or 22 recommended).
 | `/sign-in`, `/sign-up` | Google, email + password, or magic link |
 | `/forgot-password`, `/reset-password`, `/check-email` | Password recovery |
 | `/auth/callback`, `/auth/error` | Where every verification link lands |
-| `/dashboard` | Signed-in only; role dashboards arrive in Phase 4 |
+| `/dashboard` | One route, four screens — owner, moderator, resident, or an empty state |
+| `/admin`, `/admin/team`, `/admin/audit` | Owner-only: buildings, invites, audit log |
+| `/gate` | Guard-only: the visitor register |
+| `/platform` | Platform staff only |
+| `/invite/[token]` | Accept an invitation into a building |
+| `/forbidden` | Signed in, wrong role |
 | `/onboarding/phone` | Mobile OTP, required before moderating a flat |
 | `/sitemap.xml`, `/robots.txt` | Generated from `src/lib/site.ts` |
 | `/api/health` | Liveness probe, no auth |
@@ -74,6 +81,7 @@ src/
     ui/                button, badge, card, input/field, modal, tabs, table,
                        dropdown, tooltip, avatar, skeleton
     auth/              sign-in/up forms, password field, Google button, phone OTP
+    dashboard/         the owner, moderator and resident dashboards
     layout/            header (with mobile menu), footer, logo, theme toggle, back-to-top
     marketing/         hero, building panel, features, steps, pricing, FAQ, testimonials, CTA
     providers/         theme (next-themes) and toast context
@@ -81,7 +89,8 @@ src/
   hooks/               shared client hooks
   lib/
     api/               route() wrapper and the response envelope
-    auth/              server actions for every flow, plus session helpers
+    auth/              server actions, session helpers, the permission matrix,
+                       guards and the navigation tree
     supabase/          browser, server and service-role clients
     validation/        Zod schemas shared by forms and endpoints
     env.ts             environment variables, validated by Zod
@@ -93,7 +102,8 @@ src/
 supabase/
   migrations/          the schema, applied in filename order
   seed.sql             sample building and ledger
-docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md
+docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md, PERMISSIONS.md
+tests/                 permission matrix checks (no database needed)
 ```
 
 Copy and sample data live in `src/content/`, so text changes never require touching a
@@ -154,11 +164,19 @@ never `localStorage`. Protected routes are guarded twice: once in middleware, on
 `(app)` layout. See `docs/AUTH.md` for the Supabase dashboard settings you need and the
 security decisions behind each flow.
 
+## Roles
+
+Five roles — platform admin, building owner, flat moderator, resident and guard — each
+scoped to an organization or a single flat rather than stacked in a ladder. One permission
+list drives the sidebar, the server guards and the API, and the RLS policies enforce the
+same rules underneath. An owner who also rents a flat somewhere else holds both roles at
+once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
+
 ## Known limitations at this phase
 
 - Phone OTP needs an SMS provider connected in Supabase; the rest of auth works without one.
-- No role checks yet — `/dashboard` is the same page for an owner and a resident until
-  Phase 4.
+- Buildings and flats are read-only in the UI; the forms arrive in Phase 5.
+- Invite links are shown on screen to copy, because email sending lands in Phase 11.
 - `src/types/database.ts` is hand-maintained until a Supabase project exists; keep it in
   step with any migration, then switch to `npm run db:types`.
 - Rate limiting is in-memory and counts per instance — replace with Upstash Redis before

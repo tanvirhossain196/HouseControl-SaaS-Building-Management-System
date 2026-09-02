@@ -20,8 +20,38 @@ const allowedOrigins = (
   .map((origin) => origin.trim())
   .filter(Boolean)
 
-/** Signed-in only. */
-const protectedPrefixes = ['/dashboard', '/onboarding', '/settings']
+/**
+ * Everything needs a session unless it is on this list. Failing closed matters:
+ * a new screen added in a later phase is protected by default, and forgetting
+ * to add it here is a visible bug rather than a silent leak.
+ */
+const publicPaths = [
+  '/',
+  '/about',
+  '/contact',
+  '/faq',
+  '/privacy',
+  '/terms',
+  '/cookies',
+  '/styleguide',
+  '/sign-in',
+  '/sign-up',
+  '/forgot-password',
+  '/reset-password',
+  '/check-email',
+  '/sitemap.xml',
+  '/robots.txt',
+]
+
+/** Prefixes that are public along with everything under them. */
+const publicPrefixes = ['/auth/', '/api/health']
+
+function isPublic(pathname: string) {
+  return (
+    publicPaths.includes(pathname) ||
+    publicPrefixes.some((prefix) => pathname.startsWith(prefix))
+  )
+}
 
 /** Signed-out only — a signed-in person landing here goes to the dashboard. */
 const guestOnlyPaths = ['/sign-in', '/sign-up', '/forgot-password']
@@ -115,11 +145,7 @@ export async function middleware(request: NextRequest) {
 
   const { response, user } = await updateSession(request)
 
-  const needsAuth = protectedPrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  )
-
-  if (needsAuth && !user) {
+  if (!isPublic(pathname) && !user) {
     const signIn = request.nextUrl.clone()
     signIn.pathname = '/sign-in'
     signIn.search = `?next=${encodeURIComponent(pathname)}`

@@ -240,6 +240,55 @@ export type NotificationRow = {
   created_at: string
 }
 
+export type InviteRow = {
+  id: string
+  org_id: string
+  flat_id: string | null
+  email: string
+  role: AppRole
+  rent_share: number | null
+  token_hash: string
+  invited_by: string
+  expires_at: string
+  accepted_at: string | null
+  accepted_by: string | null
+  revoked_at: string | null
+  created_at: string
+}
+
+export type ExpenseShareRow = {
+  id: string
+  expense_id: string
+  flat_id: string
+  amount: number
+  due_id: string | null
+  created_at: string
+}
+
+export type LandlordRentRow = Timestamps & {
+  id: string
+  flat_id: string
+  period: string
+  amount: number
+  paid_at: string | null
+  reference: string | null
+  recorded_by: string | null
+}
+
+export type ModeratorTransferRow = {
+  id: string
+  flat_id: string
+  from_user_id: string
+  to_user_id: string
+  status: TransferStatus
+  otp_verified_at: string | null
+  responded_at: string | null
+  expires_at: string
+  rolled_back_at: string | null
+  rolled_back_by: string | null
+  created_at: string
+}
+
 export type AuditLogRow = {
   id: number
   org_id: string | null
@@ -286,6 +335,16 @@ export type Database = {
       maintenance_requests: TableDef<
         MaintenanceRow,
         'building_id' | 'reference' | 'title' | 'description' | 'reported_by'
+      >
+      invites: TableDef<
+        InviteRow,
+        'org_id' | 'email' | 'role' | 'token_hash' | 'invited_by' | 'expires_at'
+      >
+      expense_shares: TableDef<ExpenseShareRow, 'expense_id' | 'flat_id' | 'amount'>
+      landlord_rent_records: TableDef<LandlordRentRow, 'flat_id' | 'period' | 'amount'>
+      moderator_transfers: TableDef<
+        ModeratorTransferRow,
+        'flat_id' | 'from_user_id' | 'to_user_id' | 'expires_at'
       >
       notifications: TableDef<NotificationRow, 'user_id' | 'event' | 'title'>
       audit_logs: TableDef<AuditLogRow, 'action' | 'entity_type'>

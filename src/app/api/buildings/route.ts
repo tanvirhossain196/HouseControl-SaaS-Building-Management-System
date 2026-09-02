@@ -11,10 +11,22 @@ import { uuid } from '@/lib/validation/common'
  * Errors are handled by route() — no try/catch here.
  */
 
-export const GET = route({ query: z.object({ orgId: uuid }) }, async ({ query }) =>
-  ok(await listBuildings(query.orgId)),
+export const GET = route(
+  {
+    query: z.object({ orgId: uuid }),
+    permission: 'building.edit',
+    scope: ({ query }) => ({ orgId: query.orgId }),
+  },
+  async ({ query }) => ok(await listBuildings(query.orgId)),
 )
 
-export const POST = route({ body: createBuildingSchema }, async ({ body, userId }) =>
-  created(await createBuilding(userId, body)),
+export const POST = route(
+  {
+    body: createBuildingSchema,
+    permission: 'building.create',
+    // Checked against the organization in the body, not "anywhere": an admin
+    // of one organization must not be able to create inside another.
+    scope: ({ body }) => ({ orgId: body.orgId }),
+  },
+  async ({ body, userId }) => created(await createBuilding(userId, body)),
 )
