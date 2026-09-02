@@ -30,7 +30,7 @@ export const navigation: NavSection[] = [
     heading: 'Building',
     items: [
       { label: 'Buildings', href: '/admin', permission: 'building.edit' },
-      { label: 'Flats', href: '/admin/flats', permission: 'flat.edit', soon: true },
+      { label: 'Flats', href: '/admin/flats', permission: 'flat.edit' },
       {
         label: 'Residents',
         href: '/admin/residents',

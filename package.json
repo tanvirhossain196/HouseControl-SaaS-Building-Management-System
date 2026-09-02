@@ -12,7 +12,9 @@
     "db:migrate": "for f in supabase/migrations/*.sql; do psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -f \"$f\"; done",
     "db:seed": "psql \"$DATABASE_URL\" -f supabase/seed.sql",
     "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > src/types/database.ts",
-    "test:permissions": "tsx tests/permissions.test.ts"
+    "test:permissions": "tsx tests/permissions.test.ts",
+    "test:units": "tsx tests/units.test.ts",
+    "test": "npm run test:permissions && npm run test:units"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

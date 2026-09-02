@@ -59,3 +59,38 @@ export const rentSplitSchema = z
 export type CreateBuildingInput = z.infer<typeof createBuildingSchema>
 export type CreateFlatInput = z.infer<typeof createFlatSchema>
 export type RentSplitInput = z.infer<typeof rentSplitSchema>
+
+/** A floor of units at a time, generated from a pattern the owner recognises. */
+export const bulkFlatsSchema = z
+  .object({
+    buildingId: uuid,
+    fromFloor: z.coerce.number().int().min(-3).max(200),
+    toFloor: z.coerce.number().int().min(-3).max(200),
+    unitsPerFloor: z.coerce.number().int().min(1).max(20),
+    floorStyle: z.enum(['ground_g', 'ground_zero', 'ground_one']).default('ground_g'),
+    unitStyle: z
+      .enum(['floor_letter', 'floor_index', 'letter_only'])
+      .default('floor_letter'),
+    skipFloors: z.array(z.coerce.number().int()).max(50).default([]),
+    monthlyRent: money.default(0),
+    rentDueDay: z.coerce.number().int().min(1).max(28).default(5),
+  })
+  .refine((value) => value.toFloor >= value.fromFloor, {
+    message: 'The top floor cannot be below the bottom floor.',
+    path: ['toFloor'],
+  })
+
+/** What the organization pays the landlord for one unit, one month. */
+export const landlordRentSchema = z.object({
+  flatId: uuid,
+  period: z.string().regex(/^\d{4}-\d{2}-01$/, 'Use the first day of the month.'),
+  amount: money,
+  paidAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the format YYYY-MM-DD.')
+    .optional(),
+  reference: z.string().trim().max(80).optional(),
+})
+
+export type BulkFlatsInput = z.infer<typeof bulkFlatsSchema>
+export type LandlordRentInput = z.infer<typeof landlordRentSchema>

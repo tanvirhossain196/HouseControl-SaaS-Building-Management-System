@@ -80,6 +80,72 @@ export async function createBuilding(
   return data
 }
 
+export async function updateBuilding(
+  userId: string,
+  buildingId: string,
+  input: Partial<Omit<CreateBuildingInput, 'orgId'>>,
+): Promise<BuildingRow> {
+  const supabase = createServerSupabase()
+  const before = await getBuilding(buildingId)
+
+  const { data, error } = await supabase
+    .from('buildings')
+    .update({
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.addressLine !== undefined && { address_line: input.addressLine }),
+      ...(input.area !== undefined && { area: input.area }),
+      ...(input.city !== undefined && { city: input.city }),
+      ...(input.postcode !== undefined && { postcode: input.postcode }),
+      ...(input.floorsCount !== undefined && { floors_count: input.floorsCount }),
+      ...(input.amenities !== undefined && { amenities: input.amenities }),
+      ...(input.photoUrl !== undefined && { photo_url: input.photoUrl }),
+      ...(input.notes !== undefined && { notes: input.notes }),
+    })
+    .eq('id', buildingId)
+    .select('*')
+    .single()
+
+  if (error) throw toAppError(error)
+
+  await writeAuditLog({
+    orgId: before.org_id,
+    actorId: userId,
+    action: 'building.updated',
+    entityType: 'building',
+    entityId: buildingId,
+    before: { name: before.name, address: before.address_line },
+    after: { name: data.name, address: data.address_line },
+  })
+
+  return data
+}
+
+/** Buildings with the counts the list screen shows, in one round trip each. */
+export async function listBuildingsWithCounts(orgId: string) {
+  const supabase = createServerSupabase()
+  const buildings = await listBuildings(orgId)
+  if (buildings.length === 0) return []
+
+  const { data: flats } = await supabase
+    .from('flats')
+    .select('id, building_id, occupancy_status')
+    .in(
+      'building_id',
+      buildings.map((building) => building.id),
+    )
+    .is('archived_at', null)
+
+  return buildings.map((building) => {
+    const units = (flats ?? []).filter((flat) => flat.building_id === building.id)
+    return {
+      ...building,
+      units: units.length,
+      occupied: units.filter((flat) => flat.occupancy_status === 'occupied').length,
+      vacant: units.filter((flat) => flat.occupancy_status === 'vacant').length,
+    }
+  })
+}
+
 export async function archiveBuilding(userId: string, buildingId: string): Promise<void> {
   const supabase = createServerSupabase()
   const building = await getBuilding(buildingId)

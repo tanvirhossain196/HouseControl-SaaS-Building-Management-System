@@ -6,10 +6,10 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 4 of 15.** Phase 1 delivered the design system and public
+**This repository is at Phase 5 of 15.** Phase 1 delivered the design system and public
 pages, Phase 2 the architecture and PostgreSQL schema, Phase 3 verified-only
-authentication, Phase 4 role-based access and the four dashboards. Building and flat
-management is next (Phase 5).
+authentication, Phase 4 role-based access and the four dashboards, Phase 5 building and
+flat management. Residents and rent splitting are next (Phase 6).
 
 ---
 
@@ -36,7 +36,7 @@ npm run db:seed      # one building, four flats, a September ledger
 | --- | --- |
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
-| `npm run test:permissions` | 15 checks over the permission matrix |
+| `npm test` | 26 checks: the permission matrix and unit numbering |
 | `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
 | `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
 
@@ -56,7 +56,10 @@ Requires Node 18.18+ (Node 20 or 22 recommended).
 | `/forgot-password`, `/reset-password`, `/check-email` | Password recovery |
 | `/auth/callback`, `/auth/error` | Where every verification link lands |
 | `/dashboard` | One route, four screens — owner, moderator, resident, or an empty state |
-| `/admin`, `/admin/team`, `/admin/audit` | Owner-only: buildings, invites, audit log |
+| `/admin` | Owner-only: buildings, with unit and occupancy counts |
+| `/admin/buildings/[id]` | One building: unit grid, flats table, bulk unit generation |
+| `/admin/flats` | Every flat across the organization, searchable |
+| `/admin/team`, `/admin/audit` | Invites and the audit log |
 | `/gate` | Guard-only: the visitor register |
 | `/platform` | Platform staff only |
 | `/invite/[token]` | Accept an invitation into a building |
@@ -82,6 +85,7 @@ src/
                        dropdown, tooltip, avatar, skeleton
     auth/              sign-in/up forms, password field, Google button, phone OTP
     dashboard/         the owner, moderator and resident dashboards
+    property/          building and flat forms, bulk generator, unit grid, flats table
     layout/            header (with mobile menu), footer, logo, theme toggle, back-to-top
     marketing/         hero, building panel, features, steps, pricing, FAQ, testimonials, CTA
     providers/         theme (next-themes) and toast context
@@ -95,6 +99,7 @@ src/
     validation/        Zod schemas shared by forms and endpoints
     env.ts             environment variables, validated by Zod
     errors.ts          AppError and Postgres error mapping
+    units.ts           unit numbering and floor labels (pure, tested)
     rate-limit.ts      fixed-window limiter used by middleware
   services/            all database access, one file per domain
   types/               database types and domain aliases
@@ -103,7 +108,7 @@ supabase/
   migrations/          the schema, applied in filename order
   seed.sql             sample building and ledger
 docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md, PERMISSIONS.md
-tests/                 permission matrix checks (no database needed)
+tests/                 permission and unit-numbering checks (no database needed)
 ```
 
 Copy and sample data live in `src/content/`, so text changes never require touching a
@@ -175,7 +180,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 ## Known limitations at this phase
 
 - Phone OTP needs an SMS provider connected in Supabase; the rest of auth works without one.
-- Buildings and flats are read-only in the UI; the forms arrive in Phase 5.
+- Residents are invited but not yet managed per flat; rent splitting arrives in Phase 6.
 - Invite links are shown on screen to copy, because email sending lands in Phase 11.
 - `src/types/database.ts` is hand-maintained until a Supabase project exists; keep it in
   step with any migration, then switch to `npm run db:types`.
@@ -187,7 +192,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 
 ## What comes next
 
-Phase 4 (RBAC and role dashboards) → Phase 5–6 (buildings, flats, residents) →
+Phase 4 (RBAC and role dashboards) → Phase 6 (residents and rent splitting) →
 Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
 
 Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part
