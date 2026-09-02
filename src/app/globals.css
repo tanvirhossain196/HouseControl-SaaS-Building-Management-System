@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Surfaces — cool paper, never cream */
+    --paper: 246 247 251;
+    --surface: 255 255 255;
+    --raised: 240 242 248;
+
+    /* Text */
+    --ink: 19 26 43;
+    --muted: 89 98 122;
+    --line: 224 228 238;
+
+    /* Brand: deep indigo carries authority, amber carries urgency */
+    --primary: 47 75 216;
+    --primary-fg: 255 255 255;
+    --primary-soft: 232 236 252;
+
+    --accent: 214 145 8;
+    --accent-fg: 34 24 0;
+    --accent-soft: 253 243 219;
+
+    /* Operational status — these are data, not decoration */
+    --paid: 15 122 87;
+    --paid-soft: 224 243 235;
+    --due: 184 113 10;
+    --due-soft: 253 241 219;
+    --overdue: 194 53 44;
+    --overdue-soft: 252 231 229;
+    --vacant: 150 158 178;
+
+    --shadow: 12 22 51;
+  }
+
+  .dark {
+    --paper: 8 15 34;
+    --surface: 15 24 48;
+    --raised: 21 32 62;
+
+    --ink: 232 236 247;
+    --muted: 154 165 192;
+    --line: 32 45 82;
+
+    --primary: 124 148 255;
+    --primary-fg: 8 15 34;
+    --primary-soft: 26 40 84;
+
+    --accent: 245 180 59;
+    --accent-fg: 30 21 0;
+    --accent-soft: 58 42 10;
+
+    --paid: 52 190 141;
+    --paid-soft: 12 48 38;
+    --due: 232 168 62;
+    --due-soft: 56 40 12;
+    --overdue: 248 113 104;
+    --overdue-soft: 62 24 22;
+    --vacant: 104 116 143;
+
+    --shadow: 0 0 0;
+  }
+
+  * {
+    @apply border-line;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper text-ink antialiased;
+    font-feature-settings: 'cv05' 1, 'ss01' 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Numerals in tables and meters must line up */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-paper;
+  }
+
+  ::selection {
+    @apply bg-primary/20;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .prose-page {
+    @apply max-w-[68ch] text-[0.975rem] leading-[1.75] text-muted;
+  }
+  .prose-page h2 {
+    @apply mb-3 mt-12 text-title text-ink;
+  }
+  .prose-page h3 {
+    @apply mb-2 mt-8 font-semibold text-ink;
+  }
+  .prose-page p + p {
+    @apply mt-4;
+  }
+  .prose-page ul {
+    @apply mt-4 space-y-2 pl-5;
+  }
+  .prose-page li {
+    @apply list-disc marker:text-line;
+  }
+  .prose-page a {
+    @apply text-primary underline underline-offset-4 hover:no-underline;
+  }
+
+  /* One hairline that separates the marketing sections without shouting */
+  .rule {
+    @apply border-t border-line;
+  }
+}
+
+@layer utilities {
+  .grid-lines {
+    background-image:
+      linear-gradient(to right, rgb(var(--line) / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--line) / 0.55) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+}
