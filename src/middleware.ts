@@ -1,12 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { pruneRateLimits, rateLimit, rateLimits } from '@/lib/rate-limit'
+import { updateSession } from '@/lib/supabase/middleware'
 
 /**
  * Runs before every request that is not a static asset.
  *
- * Responsibilities, in order: CORS for /api, rate limiting for /api, and
- * security headers. Session refresh is added here in Phase 3; route
- * protection by role is added in Phase 4.
+ * In order: CORS for /api, rate limiting for /api, a CSRF origin check on
+ * state-changing requests, Supabase session refresh, and route protection.
+ * Role-level checks (admin vs moderator vs resident) arrive in Phase 4; this
+ * file only answers "are you signed in".
  */
 
 const allowedOrigins = (
@@ -17,6 +19,14 @@ const allowedOrigins = (
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
+
+/** Signed-in only. */
+const protectedPrefixes = ['/dashboard', '/onboarding', '/settings']
+
+/** Signed-out only — a signed-in person landing here goes to the dashboard. */
+const guestOnlyPaths = ['/sign-in', '/sign-up', '/forgot-password']
+
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 function corsHeaders(origin: string | null) {
   const headers = new Headers()
@@ -44,7 +54,19 @@ function limitForPath(pathname: string) {
   return rateLimits.default
 }
 
-export function middleware(request: NextRequest) {
+function jsonError(code: string, message: string, status: number, headers?: HeadersInit) {
+  return NextResponse.json({ ok: false, error: { code, message } }, { status, headers })
+}
+
+function safeOrigin(value: string): string | null {
+  try {
+    return new URL(value).origin
+  } catch {
+    return null
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isApi = pathname.startsWith('/api')
   const origin = request.headers.get('origin')
@@ -54,48 +76,68 @@ export function middleware(request: NextRequest) {
   }
 
   if (isApi) {
-    // Reject cross-origin calls from origins we did not allow.
     if (origin && !allowedOrigins.includes(origin)) {
-      return NextResponse.json(
-        { ok: false, error: { code: 'forbidden', message: 'Origin not allowed.' } },
-        { status: 403 },
-      )
+      return jsonError('forbidden', 'Origin not allowed.', 403)
     }
 
     if (Math.random() < 0.01) pruneRateLimits()
 
-    const limit = limitForPath(pathname)
-    const result = rateLimit(clientKey(request), limit)
-
+    const result = rateLimit(clientKey(request), limitForPath(pathname))
     if (!result.allowed) {
-      const retryAfter = Math.ceil((result.resetAt - Date.now()) / 1000)
-      return NextResponse.json(
-        {
-          ok: false,
-          error: {
-            code: 'rate_limited',
-            message: 'Too many requests. Try again shortly.',
-          },
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(retryAfter),
-            'X-RateLimit-Limit': String(result.limit),
-            'X-RateLimit-Remaining': '0',
-          },
-        },
-      )
+      return jsonError('rate_limited', 'Too many requests. Try again shortly.', 429, {
+        'Retry-After': String(Math.ceil((result.resetAt - Date.now()) / 1000)),
+        'X-RateLimit-Limit': String(result.limit),
+        'X-RateLimit-Remaining': '0',
+      })
     }
-
-    const response = NextResponse.next()
-    corsHeaders(origin).forEach((value, key) => response.headers.set(key, value))
-    response.headers.set('X-RateLimit-Limit', String(result.limit))
-    response.headers.set('X-RateLimit-Remaining', String(result.remaining))
-    return response
   }
 
-  return NextResponse.next()
+  /**
+   * CSRF: session cookies are SameSite=Lax, which already blocks a cross-site
+   * form POST. This is the second check — a state-changing request must come
+   * from an origin we know. Server Actions send an Origin header too.
+   */
+  if (!SAFE_METHODS.has(request.method)) {
+    const source = origin ?? request.headers.get('referer')
+    const sourceOrigin = source ? safeOrigin(source) : null
+    const sameSite = sourceOrigin === request.nextUrl.origin
+
+    if (!sameSite && !(sourceOrigin && allowedOrigins.includes(sourceOrigin))) {
+      return isApi
+        ? jsonError('forbidden', 'Cross-site request blocked.', 403)
+        : new NextResponse('Cross-site request blocked.', { status: 403 })
+    }
+  }
+
+  // Session refresh. Skipped when Supabase is not configured yet, so the
+  // marketing site still runs on a machine with no keys.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.next()
+
+  const { response, user } = await updateSession(request)
+
+  const needsAuth = protectedPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  )
+
+  if (needsAuth && !user) {
+    const signIn = request.nextUrl.clone()
+    signIn.pathname = '/sign-in'
+    signIn.search = `?next=${encodeURIComponent(pathname)}`
+    return NextResponse.redirect(signIn)
+  }
+
+  if (user && guestOnlyPaths.includes(pathname)) {
+    const dashboard = request.nextUrl.clone()
+    dashboard.pathname = '/dashboard'
+    dashboard.search = ''
+    return NextResponse.redirect(dashboard)
+  }
+
+  if (isApi) {
+    corsHeaders(origin).forEach((value, key) => response.headers.set(key, value))
+  }
+
+  return response
 }
 
 export const config = {

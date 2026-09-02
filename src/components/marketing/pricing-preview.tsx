@@ -45,7 +45,7 @@ export function PricingPreview() {
               ))}
             </ul>
             <Link
-              href="/contact"
+              href={plan.featured ? '/contact' : '/sign-up'}
               className={cn(
                 buttonVariants({
                   variant: plan.featured ? 'primary' : 'outline',

@@ -2,9 +2,6 @@ import type { Metadata, Viewport } from 'next'
 import { site } from '@/lib/site'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { ToastProvider } from '@/components/providers/toast-provider'
-import { SiteHeader } from '@/components/layout/site-header'
-import { SiteFooter } from '@/components/layout/site-footer'
-import { BackToTop } from '@/components/layout/back-to-top'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -74,16 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <ToastProvider>
-            <div className="flex min-h-dvh flex-col">
-              <SiteHeader />
-              <main id="main" className="flex-1">
-                {children}
-              </main>
-              <SiteFooter />
-            </div>
-            <BackToTop />
-          </ToastProvider>
+          <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
       </body>
     </html>

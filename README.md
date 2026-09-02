@@ -6,9 +6,9 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 2 of 15.** Phase 1 delivered the design system and public
-pages; Phase 2 adds the project architecture, the PostgreSQL schema, and the API layer.
-Auth is next (Phase 3), then role-based dashboards (Phase 4).
+**This repository is at Phase 3 of 15.** Phase 1 delivered the design system and public
+pages, Phase 2 the architecture and PostgreSQL schema, Phase 3 verified-only
+authentication. Role-based dashboards are next (Phase 4).
 
 ---
 
@@ -50,6 +50,11 @@ Requires Node 18.18+ (Node 20 or 22 recommended).
 | `/faq` | Full FAQ with `FAQPage` structured data |
 | `/privacy`, `/terms`, `/cookies` | Legal pages — placeholder copy, have a lawyer review before launch |
 | `/styleguide` | Every component and token in one page. `noindex`, not linked from the site |
+| `/sign-in`, `/sign-up` | Google, email + password, or magic link |
+| `/forgot-password`, `/reset-password`, `/check-email` | Password recovery |
+| `/auth/callback`, `/auth/error` | Where every verification link lands |
+| `/dashboard` | Signed-in only; role dashboards arrive in Phase 4 |
+| `/onboarding/phone` | Mobile OTP, required before moderating a flat |
 | `/sitemap.xml`, `/robots.txt` | Generated from `src/lib/site.ts` |
 | `/api/health` | Liveness probe, no auth |
 | `/api/buildings` | Reference endpoint showing the validate → service → envelope pattern |
@@ -59,10 +64,16 @@ Requires Node 18.18+ (Node 20 or 22 recommended).
 
 ```
 src/
-  app/                 routes, API handlers, metadata, sitemap, error + loading states
+  app/
+    (marketing)/       public site — nav, footer, back-to-top
+    (auth)/            sign-in, sign-up, recovery — no nav, one task per page
+    (app)/             everything behind sign-in
+    api/               route handlers
+    auth/callback/     one-time code exchange
   components/
     ui/                button, badge, card, input/field, modal, tabs, table,
                        dropdown, tooltip, avatar, skeleton
+    auth/              sign-in/up forms, password field, Google button, phone OTP
     layout/            header (with mobile menu), footer, logo, theme toggle, back-to-top
     marketing/         hero, building panel, features, steps, pricing, FAQ, testimonials, CTA
     providers/         theme (next-themes) and toast context
@@ -70,6 +81,7 @@ src/
   hooks/               shared client hooks
   lib/
     api/               route() wrapper and the response envelope
+    auth/              server actions for every flow, plus session helpers
     supabase/          browser, server and service-role clients
     validation/        Zod schemas shared by forms and endpoints
     env.ts             environment variables, validated by Zod
@@ -77,11 +89,11 @@ src/
     rate-limit.ts      fixed-window limiter used by middleware
   services/            all database access, one file per domain
   types/               database types and domain aliases
-  middleware.ts        CORS, rate limiting
+  middleware.ts        CORS, rate limiting, CSRF origin check, route protection
 supabase/
   migrations/          the schema, applied in filename order
   seed.sql             sample building and ledger
-docs/                  ARCHITECTURE.md and DATABASE.md
+docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md
 ```
 
 Copy and sample data live in `src/content/`, so text changes never require touching a
@@ -134,9 +146,19 @@ that owns `dues.amount_paid`. Everything else hangs off those: expenses split in
 `audit_logs` table nobody can edit. See `docs/DATABASE.md` for the ERD and the rules the
 database enforces on its own.
 
+## Authentication
+
+Google OAuth, email + password with a mandatory confirmation link, or a magic link.
+An unverified account can see nothing. Sessions live in httpOnly, SameSite=Lax cookies —
+never `localStorage`. Protected routes are guarded twice: once in middleware, once in the
+`(app)` layout. See `docs/AUTH.md` for the Supabase dashboard settings you need and the
+security decisions behind each flow.
+
 ## Known limitations at this phase
 
-- No auth yet, so API routes 401 until Phase 3 wires Supabase Auth.
+- Phone OTP needs an SMS provider connected in Supabase; the rest of auth works without one.
+- No role checks yet — `/dashboard` is the same page for an owner and a resident until
+  Phase 4.
 - `src/types/database.ts` is hand-maintained until a Supabase project exists; keep it in
   step with any migration, then switch to `npm run db:types`.
 - Rate limiting is in-memory and counts per instance — replace with Upstash Redis before
@@ -147,7 +169,7 @@ database enforces on its own.
 
 ## What comes next
 
-Phase 3 (verified-only auth) → Phase 4 (RBAC and role dashboards) → Phase 5–6 (buildings, flats, residents) →
+Phase 4 (RBAC and role dashboards) → Phase 5–6 (buildings, flats, residents) →
 Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
 
 Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part

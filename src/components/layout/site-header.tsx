@@ -115,11 +115,11 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-2 md:flex">
           <ThemeToggle />
-          <Link href="/contact" className="text-sm font-medium text-muted hover:text-ink">
+          <Link href="/sign-in" className="text-sm font-medium text-muted hover:text-ink">
             Sign in
           </Link>
-          <Link href="/contact" className={buttonVariants({ size: 'sm' })}>
-            Book a demo
+          <Link href="/sign-up" className={buttonVariants({ size: 'sm' })}>
+            Get started
           </Link>
         </div>
 
@@ -158,16 +158,16 @@ export function SiteHeader() {
           </ul>
           <div className="mt-4 flex flex-col gap-2 border-t border-line pt-4">
             <Link
-              href="/contact"
+              href="/sign-in"
               className="flex min-h-12 items-center rounded-control px-2 text-[0.95rem] font-medium text-muted hover:bg-raised"
             >
               Sign in
             </Link>
             <Link
-              href="/contact"
+              href="/sign-up"
               className="flex min-h-12 items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-primary-fg"
             >
-              Book a demo
+              Get started
             </Link>
           </div>
         </nav>
