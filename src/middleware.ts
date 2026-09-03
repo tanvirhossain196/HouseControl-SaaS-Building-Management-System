@@ -43,8 +43,15 @@ const publicPaths = [
   '/robots.txt',
 ]
 
-/** Prefixes that are public along with everything under them. */
-const publicPrefixes = ['/auth/', '/api/health']
+/**
+ * Prefixes that are public along with everything under them.
+ *
+ * Gateway callbacks arrive from the provider's servers with no session and no
+ * Origin header, so they are exempt from both the session check and the CSRF
+ * origin check below. Their authenticity is established by signature
+ * verification inside the handler instead.
+ */
+const publicPrefixes = ['/auth/', '/api/health', '/api/payments/webhook/']
 
 function isPublic(pathname: string) {
   return (
@@ -127,7 +134,10 @@ export async function middleware(request: NextRequest) {
    * form POST. This is the second check — a state-changing request must come
    * from an origin we know. Server Actions send an Origin header too.
    */
-  if (!SAFE_METHODS.has(request.method)) {
+  if (
+    !SAFE_METHODS.has(request.method) &&
+    !pathname.startsWith('/api/payments/webhook/')
+  ) {
     const source = origin ?? request.headers.get('referer')
     const sourceOrigin = source ? safeOrigin(source) : null
     const sameSite = sourceOrigin === request.nextUrl.origin

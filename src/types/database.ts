@@ -168,6 +168,8 @@ export type PaymentRow = Timestamps & {
   gateway: string | null
   gateway_payload: Json | null
   note: string | null
+  gateway_status: string | null
+  bank_transaction_id: string | null
   reviewed_by: string | null
   reviewed_at: string | null
   rejection_reason: string | null
@@ -289,6 +291,23 @@ export type ModeratorTransferRow = {
   created_at: string
 }
 
+export type WebhookEventRow = {
+  id: string
+  provider: string
+  transaction_id: string
+  validation_id: string | null
+  event_type: string
+  signature_ok: boolean
+  gateway_status: string | null
+  amount: number | null
+  payload: Json
+  payment_id: string | null
+  outcome: 'received' | 'confirmed' | 'rejected' | 'duplicate' | 'invalid' | 'error'
+  error: string | null
+  received_at: string
+  processed_at: string | null
+}
+
 export type AuditLogRow = {
   id: number
   org_id: string | null
@@ -348,6 +367,10 @@ export type Database = {
       >
       notifications: TableDef<NotificationRow, 'user_id' | 'event' | 'title'>
       audit_logs: TableDef<AuditLogRow, 'action' | 'entity_type'>
+      webhook_events: TableDef<
+        WebhookEventRow,
+        'provider' | 'transaction_id' | 'signature_ok'
+      >
     }
     Views: Record<string, never>
     Functions: Record<string, never>

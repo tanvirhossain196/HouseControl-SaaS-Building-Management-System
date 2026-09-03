@@ -14,12 +14,14 @@
     "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > src/types/database.ts",
     "test:permissions": "tsx tests/permissions.test.ts",
     "test:units": "tsx tests/units.test.ts",
-    "test": "npm run test:permissions && npm run test:units && npm run test:rent && npm run test:rent-flow && npm run test:billing",
+    "test": "npm run test:permissions && npm run test:units && npm run test:rent && npm run test:rent-flow && npm run test:billing && npm run test:gateway",
     "test:rent": "tsx tests/rent-split.test.ts",
     "test:rent-flow": "tsx tests/rent-flow.test.ts",
-    "test:billing": "tsx tests/billing.test.ts"
+    "test:billing": "tsx tests/billing.test.ts",
+    "test:gateway": "tsx tests/gateway.test.ts"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "@supabase/ssr": "^0.12.5",
     "@supabase/supabase-js": "^2.112.4",
     "class-variance-authority": "^0.7.0",
@@ -27,6 +29,7 @@
     "lucide-react": "^0.427.0",
     "next": "^14.2.35",
     "next-themes": "^0.3.0",
+    "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.2",

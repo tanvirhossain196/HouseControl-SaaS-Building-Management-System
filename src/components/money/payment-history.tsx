@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { EmptyState } from '@/components/layout/page-header'
 import { formatTaka } from '@/lib/utils'
+import { FileText } from 'lucide-react'
 import type { PaymentWithContext } from '@/services/payments.service'
 import type { PaymentStatus } from '@/types'
 
@@ -72,7 +73,19 @@ export function PaymentHistory({
               {methodLabel[payment.method] ?? payment.method}
             </TD>
             <TD className="tabular font-mono text-xs text-muted">
-              {payment.receipt_no ?? '—'}
+              {payment.receipt_no ? (
+                <a
+                  href={`/api/receipts/${payment.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-primary hover:underline"
+                >
+                  <FileText className="size-3.5" aria-hidden />
+                  {payment.receipt_no}
+                </a>
+              ) : (
+                '—'
+              )}
             </TD>
             <TD>
               <Badge tone={statusTone[payment.status]} dot>

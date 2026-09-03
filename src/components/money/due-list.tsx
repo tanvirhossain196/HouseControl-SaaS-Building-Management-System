@@ -2,13 +2,23 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/layout/page-header'
 import { PayForm } from './pay-form'
+import { PayOnlineButton } from './pay-online-button'
 import { formatTaka, dueLabel } from '@/lib/utils'
 import { daysUntil } from '@/services/dues.service'
 import { outstandingOf, periodLabel } from '@/lib/billing'
 import type { DueRow } from '@/types'
 
 /** What one resident owes, with a way to record each payment against it. */
-export function DueList({ dues, payable = true }: { dues: DueRow[]; payable?: boolean }) {
+export function DueList({
+  dues,
+  payable = true,
+  online = false,
+}: {
+  dues: DueRow[]
+  payable?: boolean
+  /** Show the gateway button. Off unless the deployment has a gateway configured. */
+  online?: boolean
+}) {
   if (dues.length === 0) {
     return (
       <EmptyState
@@ -60,6 +70,10 @@ export function DueList({ dues, payable = true }: { dues: DueRow[]; payable?: bo
               >
                 {due.status === 'paid' ? 'Paid' : dueLabel(left)}
               </Badge>
+
+              {payable && outstanding > 0 && online && (
+                <PayOnlineButton flatId={due.flat_id} dueId={due.id} />
+              )}
 
               {payable && outstanding > 0 && (
                 <PayForm

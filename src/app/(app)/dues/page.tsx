@@ -26,6 +26,10 @@ export default async function MyDuesPage() {
     listPaymentsForUser(session.userId).catch(() => []),
   ])
 
+  // The gateway button only appears where a gateway is actually configured,
+  // so a deployment without one shows the manual path only.
+  const onlineEnabled = Boolean(process.env.SSLCOMMERZ_STORE_ID)
+
   const today = todayInDhaka()
   const period = periodOf()
 
@@ -81,7 +85,7 @@ export default async function MyDuesPage() {
           when they confirm it.
         </p>
         <div className="mt-4">
-          <DueList dues={open} />
+          <DueList dues={open} online={onlineEnabled} />
         </div>
       </section>
 

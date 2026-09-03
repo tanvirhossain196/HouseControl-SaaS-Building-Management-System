@@ -14,6 +14,7 @@ import {
   reversePayment,
   submitPayment,
 } from '@/services/payments.service'
+import { startCheckout } from '@/services/gateway.service'
 import { isoDate, money, period as periodSchema, uuid } from '@/lib/validation/common'
 import type { ActionResult } from '@/types'
 
@@ -170,6 +171,34 @@ export async function waiveDueAction(input: unknown): Promise<ActionResult<null>
     await waiveDue(session.userId, parsed.data.dueId, parsed.data.reason)
     refresh(due.flat_id)
     return { ok: true, data: null }
+  } catch (error) {
+    return { ok: false, error: toAppError(error).message }
+  }
+}
+
+const checkoutSchema = z.object({ flatId: uuid, dueId: uuid })
+
+/**
+ * Starts an online payment.
+ *
+ * The amount is read from the charge on the server — the browser only names
+ * which charge is being paid, never how much it is worth.
+ */
+export async function startCheckoutAction(
+  input: unknown,
+): Promise<ActionResult<{ redirectUrl: string }>> {
+  const parsed = checkoutSchema.safeParse(input)
+  if (!parsed.success) return invalid(parsed.error)
+
+  try {
+    const session = await requireSession()
+    const belongs = session.memberships.flats.some(
+      (flat) => flat.flatId === parsed.data.flatId,
+    )
+    if (!belongs) return { ok: false, error: 'You are not a resident of that flat.' }
+
+    const result = await startCheckout(session.userId, parsed.data)
+    return { ok: true, data: { redirectUrl: result.redirectUrl } }
   } catch (error) {
     return { ok: false, error: toAppError(error).message }
   }
