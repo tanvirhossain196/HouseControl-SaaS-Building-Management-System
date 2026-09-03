@@ -6,11 +6,11 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 8 of 15.** Phases 1–6 delivered the design system, the
+**This repository is at Phase 9 of 15.** Phases 1–6 delivered the design system, the
 schema, authentication, role-based access, building and flat management, and rent
 splitting. Phase 7 added the dues ledger, manual payments, the SSLCommerz gateway and PDF
-receipts, Phase 8 the consent-based moderator handover. The gate register is next
-(Phase 9).
+receipts, Phase 8 the consent-based moderator handover, Phase 9 the gate register.
+Complaints and maintenance are next (Phase 10).
 
 ---
 
@@ -37,7 +37,7 @@ npm run db:seed      # one building, four flats, a September ledger
 | --- | --- |
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
-| `npm test` | 93 checks: permissions, units, rent, billing, gateway signatures, handover codes |
+| `npm test` | 106 checks: permissions, units, rent, billing, gateway, handover, gate |
 | `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
 | `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
 
@@ -69,7 +69,8 @@ Requires Node 18.18+ (Node 20 or 22 recommended).
 | `/api/payments/webhook/sslcommerz` | IPN endpoint — signature-verified, public by necessity |
 | `/api/receipts/[id]` | PDF receipt for a confirmed payment |
 | `/admin/team`, `/admin/audit` | Invites and the audit log |
-| `/gate` | Guard-only: the visitor register |
+| `/gate` | Guard-only: log arrivals and exits, check codes, see the blocklist |
+| `/visitors` | A resident's own visitors, and pre-approval codes for guests |
 | `/platform` | Platform staff only |
 | `/invite/[token]` | Accept an invitation into a building |
 | `/forbidden` | Signed in, wrong role |
@@ -98,6 +99,7 @@ src/
     residents/         resident list, rent-split editor, invites, directory
     money/             pay form, review queue, bill-a-month, ledger views
     transfers/         handover flow, incoming offers, history and undo
+    gate/              guard console, pre-approval, visit log
     layout/            header (with mobile menu), footer, logo, theme toggle, back-to-top
     marketing/         hero, building panel, features, steps, pricing, FAQ, testimonials, CTA
     providers/         theme (next-themes) and toast context
@@ -116,6 +118,7 @@ src/
     billing.ts         periods, due dates, receipt numbers (pure, tested)
     receipt.ts         receipt model and PDF-safe text (pure, tested)
     otp.ts             handover codes and their timing rules (pure, tested)
+    gate.ts            entry codes, phone matching, visit durations (pure, tested)
     gateway/           SSLCommerz adapter and IPN signature verification
     rate-limit.ts      fixed-window limiter used by middleware
   services/            all database access, one file per domain
@@ -125,7 +128,7 @@ supabase/
   migrations/          the schema, applied in filename order
   seed.sql             sample building and ledger
 docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md, PERMISSIONS.md,
-                       PAYMENTS.md, HANDOVER.md
+                       PAYMENTS.md, HANDOVER.md, GATE.md
 tests/                 permission, unit-numbering and rent-split checks (no database)
 ```
 
@@ -213,7 +216,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 
 ## What comes next
 
-Phase 4 (RBAC and role dashboards) → Phase 9 (gate register) →
+Phase 4 (RBAC and role dashboards) → Phase 10 (complaints and maintenance) →
 Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
 
 Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part

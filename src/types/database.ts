@@ -192,6 +192,19 @@ export type ExpenseRow = Timestamps & {
   created_by: string
 }
 
+export type VisitorKind = 'guest' | 'courier' | 'service' | 'staff' | 'other'
+
+export type BlockedVisitorRow = Timestamps & {
+  id: string
+  building_id: string
+  full_name: string
+  phone: string | null
+  reason: string
+  blocked_by: string
+  lifted_at: string | null
+  lifted_by: string | null
+}
+
 export type VisitorRow = Timestamps & {
   id: string
   building_id: string
@@ -209,6 +222,12 @@ export type VisitorRow = Timestamps & {
   logged_by: string | null
   is_blocked: boolean
   block_reason: string | null
+  kind: VisitorKind
+  code_expires_at: string | null
+  notified_at: string | null
+  vehicle: string | null
+  id_note: string | null
+  exit_logged_by: string | null
 }
 
 export type MaintenanceRow = Timestamps & {
@@ -359,6 +378,10 @@ export type Database = {
         'building_id' | 'category' | 'title' | 'amount' | 'period' | 'created_by'
       >
       visitors: TableDef<VisitorRow, 'building_id' | 'full_name'>
+      blocked_visitors: TableDef<
+        BlockedVisitorRow,
+        'building_id' | 'full_name' | 'reason' | 'blocked_by'
+      >
       maintenance_requests: TableDef<
         MaintenanceRow,
         'building_id' | 'reference' | 'title' | 'description' | 'reported_by'

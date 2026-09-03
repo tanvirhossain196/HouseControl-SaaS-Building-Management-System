@@ -14,12 +14,13 @@
     "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > src/types/database.ts",
     "test:permissions": "tsx tests/permissions.test.ts",
     "test:units": "tsx tests/units.test.ts",
-    "test": "npm run test:permissions && npm run test:units && npm run test:rent && npm run test:rent-flow && npm run test:billing && npm run test:gateway && npm run test:otp",
+    "test": "npm run test:permissions && npm run test:units && npm run test:rent && npm run test:rent-flow && npm run test:billing && npm run test:gateway && npm run test:otp && npm run test:gate",
     "test:rent": "tsx tests/rent-split.test.ts",
     "test:rent-flow": "tsx tests/rent-flow.test.ts",
     "test:billing": "tsx tests/billing.test.ts",
     "test:gateway": "tsx tests/gateway.test.ts",
-    "test:otp": "tsx tests/otp.test.ts"
+    "test:otp": "tsx tests/otp.test.ts",
+    "test:gate": "tsx tests/gate.test.ts"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

@@ -57,7 +57,6 @@ export const navigation: NavSection[] = [
         label: 'Visitors',
         href: '/visitors',
         permission: 'visitor.preapprove',
-        soon: true,
       },
       {
         label: 'Repairs',
