@@ -6,6 +6,8 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
 import { Logo } from '@/components/layout/logo'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { SignOutButton } from '@/components/auth/sign-out-button'
+import { NotificationBell } from '@/components/notifications/notification-bell'
+import { listNotifications, unreadCount } from '@/services/notifications.service'
 import { Avatar } from '@/components/ui/avatar'
 
 /**
@@ -19,6 +21,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await requireSession()
   const role = sessionRole(session)
 
+  const [notifications, unread] = await Promise.all([
+    listNotifications(15).catch(() => []),
+    unreadCount().catch(() => 0),
+  ])
+
   return (
     <PermissionProvider value={{ ...permissionContext(session), role }}>
       <div className="flex min-h-dvh flex-col">
@@ -26,6 +33,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-5">
             <Logo href="/dashboard" />
             <div className="flex items-center gap-3">
+              <NotificationBell notifications={notifications} unread={unread} />
               <ThemeToggle />
               <Link
                 href="/onboarding/phone"

@@ -276,6 +276,38 @@ export type NotificationRow = {
   data: Json
   read_at: string | null
   created_at: string
+  /** event:user:subject:day — the index that stops a repeat send. */
+  dedupe_key: string | null
+  send_after: string | null
+  subject_id: string | null
+}
+
+export type NotificationPreferenceRow = {
+  user_id: string
+  event: string
+  in_app: boolean
+  email: boolean
+  sms: boolean
+  push: boolean
+  updated_at: string
+}
+
+export type MessageDeliveryRow = {
+  id: string
+  channel: NotificationChannel
+  user_id: string | null
+  notification_id: string | null
+  to_email: string | null
+  to_phone: string | null
+  template: string
+  provider_id: string | null
+  status: 'queued' | 'sent' | 'failed' | 'skipped'
+  error: string | null
+  payload: Json
+  attempts: number
+  last_attempt_at: string | null
+  sent_at: string | null
+  created_at: string
 }
 
 export type InviteRow = {
@@ -415,6 +447,8 @@ export type Database = {
       >
       maintenance_events: TableDef<MaintenanceEventRow, 'request_id' | 'to_status'>
       notifications: TableDef<NotificationRow, 'user_id' | 'event' | 'title'>
+      notification_preferences: TableDef<NotificationPreferenceRow, 'user_id' | 'event'>
+      message_deliveries: TableDef<MessageDeliveryRow, 'channel' | 'template'>
       audit_logs: TableDef<AuditLogRow, 'action' | 'entity_type'>
       webhook_events: TableDef<
         WebhookEventRow,

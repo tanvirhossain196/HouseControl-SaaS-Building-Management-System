@@ -51,7 +51,13 @@ const publicPaths = [
  * origin check below. Their authenticity is established by signature
  * verification inside the handler instead.
  */
-const publicPrefixes = ['/auth/', '/api/health', '/api/payments/webhook/']
+const publicPrefixes = [
+  '/auth/',
+  '/api/health',
+  '/api/payments/webhook/',
+  // The scheduler has no session; the route checks a shared secret instead.
+  '/api/cron/',
+]
 
 function isPublic(pathname: string) {
   return (

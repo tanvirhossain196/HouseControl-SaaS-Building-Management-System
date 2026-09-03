@@ -4,6 +4,7 @@ import { createAdminSupabase } from '@/lib/supabase/admin'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { AppError, conflict, forbidden, notFound, toAppError } from '@/lib/errors'
 import { writeAuditLog } from './audit.service'
+import { notify, notifyMany } from './notifications.service'
 import { listResidents } from './residents.service'
 import { getFlat } from './flats.service'
 import {
@@ -72,16 +73,18 @@ async function getTransfer(transferId: string): Promise<TransferRow> {
   return data as unknown as TransferRow
 }
 
-/** Delivers the code. Phase 11 sends the SMS; until then it is an in-app notification. */
+/**
+ * Delivers the code by SMS, falling back to the bell.
+ *
+ * `dedupeOn: 'none'` because a resend must actually resend — this is the one
+ * message where a second copy is the point rather than a mistake.
+ */
 async function deliverCode(userId: string, code: string, flatLabel: string) {
-  const admin = createAdminSupabase()
-
-  await admin.from('notifications').insert({
-    user_id: userId,
+  await notify({
+    userId,
     event: 'moderator.transfer_code',
-    title: `Handover code for flat ${flatLabel}`,
-    body: `Your code is ${code}. It expires in 10 minutes. If you did not start a handover, ignore this and tell the building owner.`,
-    channel: 'sms',
+    data: { code, unit: flatLabel },
+    dedupeOn: 'none',
   })
 
   if (process.env.NODE_ENV !== 'production') {
@@ -377,12 +380,13 @@ export async function confirmTransferCode(
 
   // Tell the incoming resident there is something waiting for them.
   const flat = await getFlat(transfer.flat_id)
-  await admin.from('notifications').insert({
-    user_id: transfer.to_user_id,
+  await notify({
+    userId: transfer.to_user_id,
     event: 'moderator.transfer_offered',
-    title: `You have been asked to moderate flat ${flat.unit_number}`,
-    body: 'Accepting makes you responsible for this flat’s rent, dues and residents.',
+    data: { unit: flat.unit_number },
+    subjectId: transferId,
     link: '/dashboard',
+    dedupeOn: 'subject',
   })
 
   await writeAuditLog({
@@ -493,14 +497,17 @@ export async function cancelTransfer(
 
   if (error) throw toAppError(error)
 
-  await admin.from('notifications').insert({
-    user_id: by === 'sender' ? transfer.to_user_id : transfer.from_user_id,
-    event: 'moderator.transfer_cancelled',
-    title: 'The moderator handover was called off',
-    body:
-      by === 'sender'
-        ? 'The current moderator withdrew the offer.'
-        : 'The person you asked has declined. The role stays with you.',
+  await notify({
+    userId: by === 'sender' ? transfer.to_user_id : transfer.from_user_id,
+    event: 'moderator.transfer_rolled_back',
+    data: {
+      reason:
+        by === 'sender'
+          ? 'The current moderator withdrew the offer.'
+          : 'The person you asked has declined. The role stays with you.',
+    },
+    subjectId: transferId,
+    dedupeOn: 'subject',
   })
 
   await writeAuditLog({
@@ -572,14 +579,12 @@ export async function rollbackTransfer(
 
   if (error) throw toAppError(error)
 
-  for (const userId of [transfer.from_user_id, transfer.to_user_id]) {
-    await admin.from('notifications').insert({
-      user_id: userId,
-      event: 'moderator.transfer_rolled_back',
-      title: 'A moderator handover was undone',
-      body: reason,
-    })
-  }
+  await notifyMany([transfer.from_user_id, transfer.to_user_id], {
+    event: 'moderator.transfer_rolled_back',
+    data: { reason },
+    subjectId: transferId,
+    dedupeOn: 'subject',
+  })
 
   await writeAuditLog({
     actorId,
@@ -624,14 +629,15 @@ async function notifyOwners(flatId: string, transferId: string, what: string) {
     .eq('role', 'admin')
     .eq('status', 'active')
 
-  for (const owner of admins ?? []) {
-    await admin.from('notifications').insert({
-      user_id: owner.user_id,
-      org_id: row.buildings.org_id,
-      event: `moderator.transfer_${what}`,
-      title: `Flat ${row.unit_number} has a new moderator`,
-      body: 'You can undo this for the next seven days.',
+  await notifyMany(
+    (admins ?? []).map((owner) => owner.user_id),
+    {
+      event: 'moderator.transfer_accepted',
+      data: { unit: row.unit_number, name: what },
+      subjectId: transferId,
+      orgId: row.buildings.org_id,
       link: `/flats/${flatId}`,
-    })
-  }
+      dedupeOn: 'subject',
+    },
+  )
 }
