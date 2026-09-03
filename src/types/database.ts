@@ -245,6 +245,23 @@ export type MaintenanceRow = Timestamps & {
   assigned_to: string | null
   resolved_at: string | null
   resolution: string | null
+  scheduled_for: string | null
+  resolved_by: string | null
+  cost: number | null
+  expense_id: string | null
+  reopened_count: number
+}
+
+export type MaintenanceEventRow = {
+  id: string
+  request_id: string
+  kind: 'status' | 'note'
+  from_status: MaintenanceStatus | null
+  to_status: MaintenanceStatus
+  note: string | null
+  photo_urls: string[]
+  actor_id: string | null
+  created_at: string
 }
 
 export type NotificationRow = {
@@ -396,6 +413,7 @@ export type Database = {
         ModeratorTransferRow,
         'flat_id' | 'from_user_id' | 'to_user_id' | 'expires_at'
       >
+      maintenance_events: TableDef<MaintenanceEventRow, 'request_id' | 'to_status'>
       notifications: TableDef<NotificationRow, 'user_id' | 'event' | 'title'>
       audit_logs: TableDef<AuditLogRow, 'action' | 'entity_type'>
       webhook_events: TableDef<

@@ -62,7 +62,6 @@ export const navigation: NavSection[] = [
         label: 'Repairs',
         href: '/maintenance',
         permission: 'maintenance.create',
-        soon: true,
       },
     ],
   },
