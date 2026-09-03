@@ -7,6 +7,8 @@ import { defaultOrgId, sessionRole } from '@/lib/auth/guards'
 import { OwnerDashboard } from '@/components/dashboard/owner-dashboard'
 import { ModeratorDashboard } from '@/components/dashboard/moderator-dashboard'
 import { ResidentDashboard } from '@/components/dashboard/resident-dashboard'
+import { listIncomingTransfers } from '@/services/transfers.service'
+import { IncomingTransfer } from '@/components/transfers/incoming-transfer'
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { buttonVariants } from '@/components/ui/button'
 
@@ -28,8 +30,15 @@ export default async function DashboardPage() {
 
   if (role === 'guard') redirect('/gate')
 
+  // An offer that sits unnoticed for 48 hours helps nobody, so it leads.
+  const incoming = await listIncomingTransfers(session.userId).catch(() => [])
+
   return (
     <>
+      {incoming.map((transfer) => (
+        <IncomingTransfer key={transfer.id} transfer={transfer} />
+      ))}
+
       {!session.isPhoneVerified && role !== 'resident' && (
         <div className="mb-8 flex flex-col gap-4 rounded-panel border border-due/30 bg-due-soft p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-3">

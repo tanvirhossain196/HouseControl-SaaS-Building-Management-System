@@ -289,6 +289,14 @@ export type ModeratorTransferRow = {
   rolled_back_at: string | null
   rolled_back_by: string | null
   created_at: string
+  /** SHA-256 of the code and a server secret. Cleared once verified. */
+  otp_hash: string | null
+  otp_sent_at: string | null
+  otp_expires_at: string | null
+  otp_attempts: number
+  rollback_deadline: string | null
+  initiated_by: string | null
+  note: string | null
 }
 
 export type WebhookEventRow = {

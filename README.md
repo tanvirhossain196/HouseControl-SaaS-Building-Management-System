@@ -6,10 +6,11 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 7 of 15.** Phases 1–6 delivered the design system, the
+**This repository is at Phase 8 of 15.** Phases 1–6 delivered the design system, the
 schema, authentication, role-based access, building and flat management, and rent
-splitting. Phase 7 adds the dues ledger, manual payments, the SSLCommerz gateway and PDF
-receipts. Moderator handover is next (Phase 8).
+splitting. Phase 7 added the dues ledger, manual payments, the SSLCommerz gateway and PDF
+receipts, Phase 8 the consent-based moderator handover. The gate register is next
+(Phase 9).
 
 ---
 
@@ -36,7 +37,7 @@ npm run db:seed      # one building, four flats, a September ledger
 | --- | --- |
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
-| `npm test` | 77 checks: permissions, units, rent splitting, billing, gateway signatures |
+| `npm test` | 93 checks: permissions, units, rent, billing, gateway signatures, handover codes |
 | `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
 | `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
 
@@ -96,6 +97,7 @@ src/
     property/          building and flat forms, bulk generator, unit grid, flats table
     residents/         resident list, rent-split editor, invites, directory
     money/             pay form, review queue, bill-a-month, ledger views
+    transfers/         handover flow, incoming offers, history and undo
     layout/            header (with mobile menu), footer, logo, theme toggle, back-to-top
     marketing/         hero, building panel, features, steps, pricing, FAQ, testimonials, CTA
     providers/         theme (next-themes) and toast context
@@ -113,6 +115,7 @@ src/
     rent-split.ts      splitting rent between residents (pure, tested)
     billing.ts         periods, due dates, receipt numbers (pure, tested)
     receipt.ts         receipt model and PDF-safe text (pure, tested)
+    otp.ts             handover codes and their timing rules (pure, tested)
     gateway/           SSLCommerz adapter and IPN signature verification
     rate-limit.ts      fixed-window limiter used by middleware
   services/            all database access, one file per domain
@@ -122,7 +125,7 @@ supabase/
   migrations/          the schema, applied in filename order
   seed.sql             sample building and ledger
 docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md, PERMISSIONS.md,
-                       PAYMENTS.md
+                       PAYMENTS.md, HANDOVER.md
 tests/                 permission, unit-numbering and rent-split checks (no database)
 ```
 
@@ -198,7 +201,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 - The gateway is SSLCommerz only; a deployment without credentials falls back to the
   manual path, which is a working deployment.
 - PDF receipts print Bangla names only if a Bangla font is placed in `public/fonts`.
-- A moderator handover still needs the owner; the consent-and-OTP version is Phase 8.
+- Handover codes arrive as in-app notifications until Phase 11 wires SMS.
 - Invite links are shown on screen to copy, because email sending lands in Phase 11.
 - `src/types/database.ts` is hand-maintained until a Supabase project exists; keep it in
   step with any migration, then switch to `npm run db:types`.
@@ -210,7 +213,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 
 ## What comes next
 
-Phase 4 (RBAC and role dashboards) → Phase 8 (moderator handover) →
+Phase 4 (RBAC and role dashboards) → Phase 9 (gate register) →
 Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
 
 Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part

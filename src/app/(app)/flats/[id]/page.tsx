@@ -8,6 +8,7 @@ import { getBuilding } from '@/services/buildings.service'
 import { listResidents } from '@/services/residents.service'
 import { listFlatDues } from '@/services/dues.service'
 import { listPaymentsForFlats } from '@/services/payments.service'
+import { getPendingTransfer, listTransfers } from '@/services/transfers.service'
 import { formatTaka } from '@/lib/utils'
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { Stat } from '@/components/dashboard/stat'
@@ -15,6 +16,8 @@ import { Button } from '@/components/ui/button'
 import { BillMonth } from '@/components/money/bill-month'
 import { DueList } from '@/components/money/due-list'
 import { PaymentHistory } from '@/components/money/payment-history'
+import { HandOverRole } from '@/components/transfers/hand-over-role'
+import { TransferHistory } from '@/components/transfers/transfer-history'
 import { InviteResident } from '@/components/residents/invite-resident'
 import { ResidentList } from '@/components/residents/resident-list'
 import { RentSplitEditor } from '@/components/residents/rent-split-editor'
@@ -37,18 +40,26 @@ export default async function FlatPage({ params }: { params: { id: string } }) {
   const session = await requireFlatPermission(flat.id, 'report.flat.view')
   const scope = await flatScope(flat.id)
 
-  const [building, residents, dues, payments] = await Promise.all([
-    getBuilding(flat.building_id).catch(() => null),
-    listResidents(flat.id).catch(() => []),
-    listFlatDues(flat.id).catch(() => []),
-    listPaymentsForFlats([flat.id], 25).catch(() => []),
-  ])
+  const [building, residents, dues, payments, transfers, pendingTransfer] =
+    await Promise.all([
+      getBuilding(flat.building_id).catch(() => null),
+      listResidents(flat.id).catch(() => []),
+      listFlatDues(flat.id).catch(() => []),
+      listPaymentsForFlats([flat.id], 25).catch(() => []),
+      listTransfers(flat.id).catch(() => []),
+      getPendingTransfer(flat.id).catch(() => null),
+    ])
 
   const canManage = sessionCan(session, 'resident.remove', scope)
   const canAssignShares = sessionCan(session, 'rent.assign', scope)
   const canAssignModerator = sessionCan(session, 'flat.assign_moderator', scope)
   const canInvite = sessionCan(session, 'resident.invite', scope)
   const canBill = sessionCan(session, 'due.manage', scope)
+  const canRollback = sessionCan(session, 'flat.assign_moderator', scope)
+  // Handing the role on is personal: only whoever currently holds it.
+  const isModeratorHere = residents.some(
+    (resident) => resident.userId === session.userId && resident.role === 'moderator',
+  )
 
   const assigned = residents.reduce((sum, resident) => sum + resident.rentShare, 0)
   const outstanding = residents.reduce((sum, resident) => sum + resident.outstanding, 0)
@@ -153,6 +164,21 @@ export default async function FlatPage({ params }: { params: { id: string } }) {
               canEdit={canAssignShares}
             />
           </div>
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-title text-ink">Who has run this flat</h2>
+        <p className="mt-1 max-w-[62ch] text-sm text-muted">
+          A handover needs a code from the outgoing moderator and consent from the
+          incoming one. The owner can undo an accepted handover for seven days.
+        </p>
+        <div className="mt-4">
+          <TransferHistory
+            transfers={transfers}
+            flatId={flat.id}
+            canRollback={canRollback}
+          />
         </div>
       </section>
 
