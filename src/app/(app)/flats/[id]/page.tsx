@@ -6,10 +6,15 @@ import { requireFlatPermission, flatScope, sessionCan } from '@/lib/auth/guards'
 import { getFlat } from '@/services/flats.service'
 import { getBuilding } from '@/services/buildings.service'
 import { listResidents } from '@/services/residents.service'
+import { listFlatDues } from '@/services/dues.service'
+import { listPaymentsForFlats } from '@/services/payments.service'
 import { formatTaka } from '@/lib/utils'
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { Stat } from '@/components/dashboard/stat'
 import { Button } from '@/components/ui/button'
+import { BillMonth } from '@/components/money/bill-month'
+import { DueList } from '@/components/money/due-list'
+import { PaymentHistory } from '@/components/money/payment-history'
 import { InviteResident } from '@/components/residents/invite-resident'
 import { ResidentList } from '@/components/residents/resident-list'
 import { RentSplitEditor } from '@/components/residents/rent-split-editor'
@@ -32,15 +37,18 @@ export default async function FlatPage({ params }: { params: { id: string } }) {
   const session = await requireFlatPermission(flat.id, 'report.flat.view')
   const scope = await flatScope(flat.id)
 
-  const [building, residents] = await Promise.all([
+  const [building, residents, dues, payments] = await Promise.all([
     getBuilding(flat.building_id).catch(() => null),
     listResidents(flat.id).catch(() => []),
+    listFlatDues(flat.id).catch(() => []),
+    listPaymentsForFlats([flat.id], 25).catch(() => []),
   ])
 
   const canManage = sessionCan(session, 'resident.remove', scope)
   const canAssignShares = sessionCan(session, 'rent.assign', scope)
   const canAssignModerator = sessionCan(session, 'flat.assign_moderator', scope)
   const canInvite = sessionCan(session, 'resident.invite', scope)
+  const canBill = sessionCan(session, 'due.manage', scope)
 
   const assigned = residents.reduce((sum, resident) => sum + resident.rentShare, 0)
   const outstanding = residents.reduce((sum, resident) => sum + resident.outstanding, 0)
@@ -60,17 +68,22 @@ export default async function FlatPage({ params }: { params: { id: string } }) {
         title={`Flat ${flat.unit_number}`}
         description={`Floor ${flat.floor} · ${formatTaka(Number(flat.monthly_rent))} a month, due on the ${flat.rent_due_day}${building ? ` · ${building.name}` : ''}`}
         actions={
-          canInvite ? (
-            <InviteResident
-              flatId={flat.id}
-              unassigned={Number(flat.monthly_rent) - assigned}
-              trigger={
-                <Button variant="outline">
-                  <UserPlus /> Invite a resident
-                </Button>
-              }
-            />
-          ) : undefined
+          <>
+            {canBill && (
+              <BillMonth scope="flat" id={flat.id} label={`flat ${flat.unit_number}`} />
+            )}
+            {canInvite ? (
+              <InviteResident
+                flatId={flat.id}
+                unassigned={Number(flat.monthly_rent) - assigned}
+                trigger={
+                  <Button variant="outline">
+                    <UserPlus /> Invite a resident
+                  </Button>
+                }
+              />
+            ) : null}
+          </>
         }
       />
 
@@ -140,6 +153,19 @@ export default async function FlatPage({ params }: { params: { id: string } }) {
               canEdit={canAssignShares}
             />
           </div>
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-title text-ink">Ledger</h2>
+        <p className="mt-1 max-w-[62ch] text-sm text-muted">
+          Everything billed to this flat, and every payment recorded against it. Unpaid
+          charges stay on the month they belong to rather than being rolled into the next
+          one.
+        </p>
+        <div className="mt-4 space-y-6">
+          <DueList dues={dues} payable={false} />
+          <PaymentHistory payments={payments} showWho />
         </div>
       </section>
     </>

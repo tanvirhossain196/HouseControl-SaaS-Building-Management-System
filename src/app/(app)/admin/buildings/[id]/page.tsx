@@ -9,6 +9,7 @@ import { formatTaka } from '@/lib/utils'
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Stat } from '@/components/dashboard/stat'
+import { BillMonth } from '@/components/money/bill-month'
 import { BuildingForm } from '@/components/property/building-form'
 import { FlatForm } from '@/components/property/flat-form'
 import { BulkFlatsForm } from '@/components/property/bulk-flats-form'
@@ -60,6 +61,7 @@ export default async function BuildingPage({ params }: { params: { id: string } 
                 </Button>
               }
             />
+            <BillMonth scope="building" id={building.id} label={building.name} />
             <BulkFlatsForm
               buildingId={building.id}
               floorsCount={building.floors_count}

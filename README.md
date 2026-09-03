@@ -6,11 +6,10 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 6 of 15.** Phase 1 delivered the design system and public
-pages, Phase 2 the architecture and PostgreSQL schema, Phase 3 verified-only
-authentication, Phase 4 role-based access and the four dashboards, Phase 5 building and
-flat management, Phase 6 residents and rent splitting. Dues and payments are next
-(Phase 7).
+**This repository is at Phase 7a of 15.** Phases 1–6 delivered the design system, the
+schema, authentication, role-based access, building and flat management, and rent
+splitting. Phase 7a adds the dues ledger and manual payments; the payment gateway is
+Phase 7b.
 
 ---
 
@@ -37,7 +36,7 @@ npm run db:seed      # one building, four flats, a September ledger
 | --- | --- |
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
-| `npm test` | 47 checks: permissions, unit numbering, rent splitting |
+| `npm test` | 59 checks: permissions, unit numbering, rent splitting, billing |
 | `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
 | `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
 
@@ -62,7 +61,9 @@ Requires Node 18.18+ (Node 20 or 22 recommended).
 | `/admin/flats` | Every flat across the organization, searchable |
 | `/admin/residents` | Every resident in the organization, searchable |
 | `/flats` | The flats you live in or moderate |
-| `/flats/[id]` | One flat: residents, rent split, invites, moderator |
+| `/flats/[id]` | One flat: residents, rent split, invites, moderator, ledger |
+| `/dues` | A resident's own charges, with a way to record each payment |
+| `/payments` | The review queue: confirm, reject or reverse |
 | `/admin/team`, `/admin/audit` | Invites and the audit log |
 | `/gate` | Guard-only: the visitor register |
 | `/platform` | Platform staff only |
@@ -91,6 +92,7 @@ src/
     dashboard/         the owner, moderator and resident dashboards
     property/          building and flat forms, bulk generator, unit grid, flats table
     residents/         resident list, rent-split editor, invites, directory
+    money/             pay form, review queue, bill-a-month, ledger views
     layout/            header (with mobile menu), footer, logo, theme toggle, back-to-top
     marketing/         hero, building panel, features, steps, pricing, FAQ, testimonials, CTA
     providers/         theme (next-themes) and toast context
@@ -106,6 +108,7 @@ src/
     errors.ts          AppError and Postgres error mapping
     units.ts           unit numbering and floor labels (pure, tested)
     rent-split.ts      splitting rent between residents (pure, tested)
+    billing.ts         periods, due dates, receipt numbers (pure, tested)
     rate-limit.ts      fixed-window limiter used by middleware
   services/            all database access, one file per domain
   types/               database types and domain aliases
@@ -186,7 +189,8 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 ## Known limitations at this phase
 
 - Phone OTP needs an SMS provider connected in Supabase; the rest of auth works without one.
-- Dues are read-only: billing a month and confirming payments arrives in Phase 7.
+- Payments are recorded and confirmed by hand; the gateway and webhooks are Phase 7b.
+- Receipts are numbers on screen, not PDFs — that comes with the gateway work.
 - A moderator handover still needs the owner; the consent-and-OTP version is Phase 8.
 - Invite links are shown on screen to copy, because email sending lands in Phase 11.
 - `src/types/database.ts` is hand-maintained until a Supabase project exists; keep it in
@@ -199,7 +203,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 
 ## What comes next
 
-Phase 4 (RBAC and role dashboards) → Phase 7 (dues, payments and receipts) →
+Phase 4 (RBAC and role dashboards) → Phase 7b (payment gateway and receipts) →
 Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
 
 Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part

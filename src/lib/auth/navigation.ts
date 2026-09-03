@@ -44,8 +44,8 @@ export const navigation: NavSection[] = [
   {
     heading: 'Money',
     items: [
-      { label: 'Dues', href: '/dues', permission: 'report.self.view', soon: true },
-      { label: 'Payments', href: '/payments', permission: 'payment.review', soon: true },
+      { label: 'Dues', href: '/dues', permission: 'report.self.view' },
+      { label: 'Payments', href: '/payments', permission: 'payment.review' },
       { label: 'Expenses', href: '/expenses', permission: 'expense.manage', soon: true },
     ],
   },

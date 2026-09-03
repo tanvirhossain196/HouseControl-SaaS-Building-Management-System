@@ -67,7 +67,18 @@ day of a month.
 
 **`dues.amount_paid` is never written by the app.** A trigger recalculates it from
 confirmed payments and moves `status` between `open`, `partially_paid` and `paid`. The
-only way to change a balance is to confirm or unconfirm a payment.
+only way to change a balance is to confirm or unconfirm a payment. Verified against a
+live Postgres instance:
+
+| Action | Result on the due |
+| --- | --- |
+| Pending payment submitted | `amount_paid` unchanged, still `open` |
+| Part of the amount confirmed | `partially_paid` |
+| The remainder confirmed | `paid` |
+| A confirmed payment reversed | back to `partially_paid`, with the right balance |
+| Billing the same month twice | one row, not two |
+| Two payments given one receipt number | rejected by the unique constraint |
+| `amount_paid` pushed above `amount` | rejected by `due_not_overpaid` |
 
 **Money is `numeric(12,2)`, never float.** Taka amounts must not drift.
 
