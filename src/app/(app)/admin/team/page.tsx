@@ -23,7 +23,7 @@ const roleTone = {
 } as const
 
 export default async function TeamPage() {
-  const session = await requirePermission('resident.invite')
+  const session = await requirePermission('org.team.manage')
   const orgId = defaultOrgId(session)
 
   if (!orgId) {

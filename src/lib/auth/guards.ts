@@ -71,3 +71,47 @@ export async function assertPermission(
 export function defaultOrgId(session: Session): string | null {
   return session.memberships.orgs.find((o) => o.role === 'admin')?.orgId ?? null
 }
+
+/**
+ * A flat's scope for `can()`: its own id plus the organization that owns it.
+ *
+ * Both are needed, because an owner's rights over a flat only apply inside
+ * their own organization and `can()` refuses to assume the link.
+ */
+export async function flatScope(
+  flatId: string,
+): Promise<PermissionScope & { flatId: string }> {
+  const { createServerSupabase } = await import('@/lib/supabase/server')
+  const supabase = createServerSupabase()
+
+  const { data } = await supabase
+    .from('flats')
+    .select('id, buildings(org_id)')
+    .eq('id', flatId)
+    .maybeSingle()
+
+  const row = data as unknown as {
+    id: string
+    buildings: { org_id: string } | null
+  } | null
+
+  return { flatId, orgId: row?.buildings?.org_id }
+}
+
+/** Page guard for anything about one flat: its moderator, or the org's owner. */
+export async function requireFlatPermission(
+  flatId: string,
+  permission: Permission,
+): Promise<Session> {
+  const scope = await flatScope(flatId)
+  return requirePermission(permission, scope)
+}
+
+/** Action guard for the same. */
+export async function assertFlatPermission(
+  flatId: string,
+  permission: Permission,
+): Promise<Session> {
+  const scope = await flatScope(flatId)
+  return assertPermission(permission, scope)
+}

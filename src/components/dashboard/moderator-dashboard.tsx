@@ -1,7 +1,9 @@
+import Link from 'next/link'
 import { getModeratorOverview } from '@/services/overview.service'
 import { formatTaka } from '@/lib/utils'
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
+import { buttonVariants } from '@/components/ui/button'
 import { Table, TBody, TD, TH, THead, TR } from '@/components/ui/table'
 import { CollectionMeter, Stat } from './stat'
 
@@ -20,6 +22,16 @@ export async function ModeratorDashboard({
       <PageHeader
         title={`Your flat, ${name}.`}
         description="Confirm what has come in, and see what has not."
+        actions={
+          flatIds[0] ? (
+            <Link
+              href={`/flats/${flatIds[0]}`}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              Residents and rent split
+            </Link>
+          ) : undefined
+        }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

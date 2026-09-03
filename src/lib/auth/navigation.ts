@@ -23,6 +23,7 @@ export const navigation: NavSection[] = [
     heading: 'Overview',
     items: [
       { label: 'Dashboard', href: '/dashboard' },
+      { label: 'My flats', href: '/flats' },
       { label: 'Platform', href: '/platform', roles: ['super_admin'] },
     ],
   },
@@ -37,7 +38,7 @@ export const navigation: NavSection[] = [
         permission: 'resident.invite',
         soon: true,
       },
-      { label: 'Invites', href: '/admin/team', permission: 'resident.invite' },
+      { label: 'Invites', href: '/admin/team', permission: 'org.team.manage' },
     ],
   },
   {

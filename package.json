@@ -14,7 +14,9 @@
     "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > src/types/database.ts",
     "test:permissions": "tsx tests/permissions.test.ts",
     "test:units": "tsx tests/units.test.ts",
-    "test": "npm run test:permissions && npm run test:units"
+    "test": "npm run test:permissions && npm run test:units && npm run test:rent && npm run test:rent-flow",
+    "test:rent": "tsx tests/rent-split.test.ts",
+    "test:rent-flow": "tsx tests/rent-flow.test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MoreHorizontal, Pencil, Archive } from 'lucide-react'
 import { archiveFlatAction } from '@/app/(app)/admin/actions'
