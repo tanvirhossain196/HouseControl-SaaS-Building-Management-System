@@ -60,4 +60,26 @@ export function publicEnv() {
   return cachedPublic
 }
 
+/**
+ * Whether this deployment has a usable Supabase project.
+ *
+ * Checked properly rather than by asking "is the URL set", because the value
+ * that arrives most often is neither set nor missing: it is the placeholder
+ * from `.env.example`, copied verbatim by someone trying the project for the
+ * first time. Treating that as configured sent them straight into a crash on
+ * the landing page, which is the worst possible first impression.
+ *
+ * Both values must be present, and neither may still be the example's.
+ */
+export function hasSupabase(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
+
+  if (!url || !key) return false
+  if (url.includes('your-project')) return false
+  if (key.length < 20) return false
+
+  return true
+}
+
 export const isProduction = process.env.NODE_ENV === 'production'

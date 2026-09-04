@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { pruneRateLimits, rateLimit, rateLimits } from '@/lib/rate-limit'
 import { updateSession } from '@/lib/supabase/middleware'
+import { hasSupabase } from '@/lib/env'
 
 /**
  * Runs before every request that is not a static asset.
@@ -155,9 +156,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Session refresh. Skipped when Supabase is not configured yet, so the
-  // marketing site still runs on a machine with no keys.
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return NextResponse.next()
+  // Session refresh. Skipped when Supabase is not configured, so the public
+  // site still runs on a machine with no keys — including one where
+  // .env.example was copied without being filled in.
+  if (!hasSupabase()) return NextResponse.next()
 
   const { response, user } = await updateSession(request)
 

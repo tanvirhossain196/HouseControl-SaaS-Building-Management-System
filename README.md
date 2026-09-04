@@ -18,9 +18,13 @@ deployment are next (Phase 15).
 
 ```bash
 npm install
-cp .env.example .env.local     # add your Supabase URL and keys
 npm run dev                    # http://localhost:3000
 ```
+
+The public site runs with no configuration at all: the landing page, the style guide at
+`/styleguide` and the auth screens all render, and `npm test` passes. Copy
+`.env.example` to `.env.local` when you have a Supabase project — the Supabase lines are
+commented out there on purpose, so copying it does not half-configure anything.
 
 The marketing pages run without any environment variables. Anything that touches the
 database needs `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
