@@ -12,6 +12,7 @@ import {
   magicLinkSchema,
   otpSchema,
   phoneSchema,
+  resetCodeSchema,
   resetPasswordSchema,
   signInSchema,
   signUpSchema,
@@ -215,6 +216,51 @@ export async function requestPasswordReset(
   })
 
   return { ok: true, data: { email: parsed.data.email } }
+}
+
+/**
+ * Checks the six-digit code from the reset email.
+ *
+ * Supabase decides between a link and a code by what the email template
+ * contains: with `{{ .Token }}` in it, the same `resetPasswordForEmail` call
+ * mails a code instead of a link. Both paths land in the same place — a
+ * short-lived recovery session — so `/reset-password` does not care which
+ * one was used.
+ *
+ * The code is `type: 'recovery'`, not `'email'`. A signup confirmation code
+ * would verify an address; this one grants a password change, and mixing
+ * them up would let an unconfirmed signup reset somebody's password.
+ */
+export async function verifyResetCode(input: unknown): Promise<Result> {
+  const parsed = resetCodeSchema.safeParse(input)
+  if (!parsed.success) return invalid(parsed.error)
+
+  const limited = throttle('reset-code', parsed.data.email)
+  if (limited) return limited
+
+  const supabase = createServerSupabase()
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: parsed.data.email,
+    token: parsed.data.token,
+    type: 'recovery',
+  })
+
+  if (error || !data.user) {
+    // One message for a wrong code and an expired one: telling them apart
+    // would say whether that address has a reset in flight.
+    return { ok: false, error: 'That code is wrong or has expired. Ask for a new one.' }
+  }
+
+  await writeAuditLog({
+    actorId: data.user.id,
+    action: 'auth.reset_code_verified',
+    entityType: 'user',
+    entityId: data.user.id,
+    ip: clientIp(),
+  })
+
+  revalidatePath('/', 'layout')
+  return { ok: true, data: null }
 }
 
 export async function updatePassword(input: unknown): Promise<Result> {

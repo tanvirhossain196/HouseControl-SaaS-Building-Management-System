@@ -36,6 +36,15 @@ export const magicLinkSchema = z.object({ email })
 
 export const forgotPasswordSchema = z.object({ email })
 
+/** The six-digit code Supabase mails when the template asks for a token. */
+export const resetCodeSchema = z.object({
+  email,
+  token: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, 'The code is six digits.'),
+})
+
 export const resetPasswordSchema = z
   .object({ password, confirmPassword: z.string() })
   .refine((v) => v.password === v.confirmPassword, {
@@ -56,3 +65,4 @@ export const otpSchema = z.object({
 export type SignInInput = z.infer<typeof signInSchema>
 export type SignUpInput = z.infer<typeof signUpSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+export type ResetCodeInput = z.infer<typeof resetCodeSchema>

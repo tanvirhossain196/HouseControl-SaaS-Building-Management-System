@@ -18,7 +18,35 @@ Passwords alone never grant access.
 | Magic link       | The link itself is the proof                     | `/check-email` → callback → `/dashboard`        |
 | Password reset   | Single-use link, one hour                        | callback → `/reset-password`                    |
 
-Phone verification (`/onboarding/phone`) is separate from sign-in. It gates moderator
+### The reset code
+
+`/forgot-password` asks for the address, mails a code, and takes the code on the next
+step. The link in the same email still works and lands in the same place.
+
+A code rather than only a link because of where this gets used: a resident opens the email
+in Gmail on their phone, and the link opens a second browser with none of the session the
+first one was building. A code is read in one app and typed into another, which is what
+everyone here already does with every OTP they get.
+
+**Supabase decides which one it sends by what the template contains.** In
+Authentication → Email Templates → Reset Password, the body must include the token:
+
+```html
+<p>Your HouseControl password reset code is <strong>{{ .Token }}</strong>.</p>
+<p>It expires in an hour and works once.</p>
+<p>Or open this link instead: <a href="{{ .ConfirmationURL }}">reset your password</a></p>
+```
+
+Without `{{ .Token }}` the email carries only a link and the code step will never match.
+
+The code is verified as `type: 'recovery'`, not `'email'`. A signup confirmation code
+verifies an address; this one grants a password change, and treating them alike would let
+an unconfirmed signup reset somebody else's password.
+
+Wrong and expired codes give the same message, and attempts are throttled per address, so
+the form cannot be used to find out whether a reset is in flight for an address.
+
+Phase 3 note: phone verification (`/onboarding/phone`) is separate from sign-in. It gates moderator
 work rather than access, because the Phase 8 role handover sends its OTP to that number.
 `requireVerifiedPhone()` is the guard to use for anything that depends on it.
 

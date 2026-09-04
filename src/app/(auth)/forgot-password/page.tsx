@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCard
       title="Reset your password"
-      description="Enter the address you sign in with. The link works once and expires in an hour."
+      description="Enter the address you sign in with. We send a six-digit code that works once and expires in an hour."
       footer={
         <p>
           Remembered it? <AuthLink href="/sign-in">Back to sign in</AuthLink>
