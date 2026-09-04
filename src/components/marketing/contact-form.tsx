@@ -1,26 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select, Textarea } from '@/components/ui/input'
 import { useToast } from '@/components/providers/toast-provider'
+import { submitEnquiry } from '@/app/(marketing)/contact/actions'
 
-const contactSchema = z.object({
-  name: z.string().trim().min(2, 'Tell us who to reply to.'),
-  email: z.string().trim().email('Use an address you can receive mail at.'),
-  phone: z
-    .string()
-    .trim()
-    .regex(
-      /^(\+?88)?01[3-9]\d{8}$/,
-      'Use a Bangladeshi mobile number, e.g. 01712345678.',
-    ),
-  units: z.string().min(1, 'Pick a range.'),
-  message: z.string().trim().min(10, 'A sentence or two about your building is enough.'),
-})
-
-type FieldName = keyof z.infer<typeof contactSchema>
+type FieldName = 'name' | 'email' | 'phone' | 'units' | 'message'
 type Errors = Partial<Record<FieldName, string>>
 
 const unitRanges = ['1–8 units', '9–20 units', '21–50 units', 'More than 50 units']
@@ -40,26 +26,29 @@ export function ContactForm() {
       string,
       string
     >
-    const parsed = contactSchema.safeParse(data)
-
-    if (!parsed.success) {
-      const next: Errors = {}
-      for (const issue of parsed.error.issues) {
-        const key = issue.path[0] as FieldName
-        next[key] ??= issue.message
-      }
-      setErrors(next)
-      const firstKey = Object.keys(next)[0]
-      if (firstKey)
-        formRef.current?.querySelector<HTMLElement>(`[name="${firstKey}"]`)?.focus()
-      return
-    }
 
     setErrors({})
     setPending(true)
-    // Phase 1 has no backend yet — Phase 2 replaces this with a server action.
-    await new Promise((resolve) => setTimeout(resolve, 900))
+
+    const result = await submitEnquiry(data)
     setPending(false)
+
+    if (!result.ok) {
+      const next: Errors = {}
+      for (const [field, messages] of Object.entries(result.fieldErrors ?? {})) {
+        next[field as FieldName] = messages[0]
+      }
+      setErrors(next)
+
+      const firstKey = Object.keys(next)[0]
+      if (firstKey) {
+        formRef.current?.querySelector<HTMLElement>(`[name="${firstKey}"]`)?.focus()
+      } else {
+        toast({ tone: 'error', title: 'Could not send', body: result.error })
+      }
+      return
+    }
+
     setSent(true)
     formRef.current?.reset()
     toast({

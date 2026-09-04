@@ -6,11 +6,11 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 13 of 15.** Phases 1–6 delivered the design system, the
+**This repository is at Phase 14 of 15.** Phases 1–6 delivered the design system, the
 schema, authentication, role-based access, building and flat management, and rent
 splitting. Phase 7 added the dues ledger, manual payments, the SSLCommerz gateway and PDF
-receipts, Phase 8 the consent-based moderator handover, Phase 9 the gate register, Phase 10 complaints and repairs, Phase 11 notifications, email and SMS, Phase 12 reports and statements, Phase 13 search. Performance and polish
-are next (Phase 14).
+receipts, Phase 8 the consent-based moderator handover, Phase 9 the gate register, Phase 10 complaints and repairs, Phase 11 notifications, email and SMS, Phase 12 reports and statements, Phase 13 search, Phase 14 performance and boundaries. Testing, docs and
+deployment are next (Phase 15).
 
 ---
 
@@ -37,7 +37,7 @@ npm run db:seed      # one building, four flats, a September ledger
 | --- | --- |
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
-| `npm test` | 191 checks across twelve suites — permissions, money, gateway, gate, repairs, notifications, reports, search |
+| `npm test` | 203 checks across thirteen suites, including architectural boundary checks |
 | `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
 | `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
 
@@ -147,7 +147,7 @@ supabase/
   seed.sql             sample building and ledger
 docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md, PERMISSIONS.md,
                        PAYMENTS.md, HANDOVER.md, GATE.md, MAINTENANCE.md,
-                       NOTIFICATIONS.md, REPORTS.md, SEARCH.md
+                       NOTIFICATIONS.md, REPORTS.md, SEARCH.md, PERFORMANCE.md
 tests/                 permission, unit-numbering and rent-split checks (no database)
 ```
 
@@ -235,7 +235,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 
 ## What comes next
 
-Phase 4 (RBAC and role dashboards) → Phase 14 (performance and polish) →
+Phase 4 (RBAC and role dashboards) → Phase 15 (testing, documentation and deployment) →
 Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
 
 Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part

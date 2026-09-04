@@ -311,3 +311,91 @@ async function assertUnitQuota(buildingId: string, adding: number) {
     )
   }
 }
+
+/**
+ * Every flat in an organization, with its counts, in four queries total.
+ *
+ * The obvious version — `listFlatsWithCounts` once per building — costs three
+ * queries per building, so an owner with six buildings paid for eighteen
+ * round trips to draw one table. This does the same work in four regardless
+ * of how many buildings there are.
+ */
+export async function listOrgFlatsWithCounts(
+  orgId: string,
+): Promise<(FlatWithCounts & { buildingName: string })[]> {
+  const supabase = createServerSupabase()
+
+  const { data: buildings, error: buildingError } = await supabase
+    .from('buildings')
+    .select('id, name')
+    .eq('org_id', orgId)
+    .is('archived_at', null)
+
+  if (buildingError) throw toAppError(buildingError)
+  if (!buildings?.length) return []
+
+  const buildingIds = buildings.map((building) => building.id)
+  const nameOf = new Map(buildings.map((building) => [building.id, building.name]))
+
+  const { data: flats, error: flatError } = await supabase
+    .from('flats')
+    .select('*')
+    .in('building_id', buildingIds)
+    .is('archived_at', null)
+
+  if (flatError) throw toAppError(flatError)
+  if (!flats?.length) return []
+
+  const flatIds = flats.map((flat) => flat.id)
+
+  const [membersResult, duesResult] = await Promise.all([
+    supabase
+      .from('flat_members')
+      .select('flat_id, role, profiles(full_name)')
+      .in('flat_id', flatIds)
+      .eq('status', 'active'),
+    supabase
+      .from('dues')
+      .select('flat_id, amount, amount_paid')
+      .in('flat_id', flatIds)
+      .in('status', ['open', 'partially_paid']),
+  ])
+
+  // Embedded selects are not expressible in the hand-written Database type.
+  const members = (membersResult.data ?? []) as unknown as {
+    flat_id: string
+    role: 'moderator' | 'resident'
+    profiles: { full_name: string } | null
+  }[]
+
+  // Grouped once rather than filtered per flat, which would be quadratic on a
+  // large organization.
+  const byFlat = new Map<string, typeof members>()
+  for (const member of members) {
+    const list = byFlat.get(member.flat_id) ?? []
+    list.push(member)
+    byFlat.set(member.flat_id, list)
+  }
+
+  const outstandingByFlat = new Map<string, number>()
+  for (const due of duesResult.data ?? []) {
+    const current = outstandingByFlat.get(due.flat_id) ?? 0
+    outstandingByFlat.set(
+      due.flat_id,
+      current + (Number(due.amount) - Number(due.amount_paid)),
+    )
+  }
+
+  return [...flats].sort(byFloorDescending).map((flat) => {
+    const flatMembers = byFlat.get(flat.id) ?? []
+    return {
+      ...flat,
+      buildingName: nameOf.get(flat.building_id) ?? 'Building',
+      residents: flatMembers.length,
+      moderatorName:
+        flatMembers.find((member) => member.role === 'moderator')?.profiles?.full_name ??
+        null,
+      outstanding: outstandingByFlat.get(flat.id) ?? 0,
+    }
+  })
+}
