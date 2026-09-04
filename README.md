@@ -6,11 +6,11 @@ A building/apartment complex management platform: flats and residents, rent and 
 shared bills, complaints, the gate register, and payments — one panel with a separate
 view for the owner, each flat moderator, every resident, and the guard.
 
-**This repository is at Phase 12 of 15.** Phases 1–6 delivered the design system, the
+**This repository is at Phase 13 of 15.** Phases 1–6 delivered the design system, the
 schema, authentication, role-based access, building and flat management, and rent
 splitting. Phase 7 added the dues ledger, manual payments, the SSLCommerz gateway and PDF
-receipts, Phase 8 the consent-based moderator handover, Phase 9 the gate register, Phase 10 complaints and repairs, Phase 11 notifications, email and SMS, Phase 12 reports and statements.
-Search and filtering are next (Phase 13).
+receipts, Phase 8 the consent-based moderator handover, Phase 9 the gate register, Phase 10 complaints and repairs, Phase 11 notifications, email and SMS, Phase 12 reports and statements, Phase 13 search. Performance and polish
+are next (Phase 14).
 
 ---
 
@@ -37,7 +37,7 @@ npm run db:seed      # one building, four flats, a September ledger
 | --- | --- |
 | `npm run dev` / `build` / `start` | Next.js |
 | `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
-| `npm test` | 162 checks across eleven suites — permissions, money, gateway, gate, repairs, notifications, reports |
+| `npm test` | 191 checks across twelve suites — permissions, money, gateway, gate, repairs, notifications, reports, search |
 | `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
 | `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
 
@@ -73,6 +73,8 @@ Requires Node 18.18+ (Node 20 or 22 recommended).
 | `/visitors` | A resident's own visitors, and pre-approval codes for guests |
 | `/maintenance` | Complaints and repairs, filtered by what the role can see |
 | `/maintenance/[id]` | One request: its timeline, notes, and the work done |
+| `/search` | Everything the role can see, in one place |
+| `/api/search` | Backs the header search box |
 | `/reports` | Collection, arrears ageing, expenses, who owes what |
 | `/api/reports/[kind]` | Ledger, arrears and expense CSVs |
 | `/api/statements/[flatId]` | A month's statement for one flat, as a PDF |
@@ -110,6 +112,7 @@ src/
     maintenance/       report form, request list, timeline and actions
     notifications/     the bell, and the preferences form
     reports/           twelve-month bars and the arrears ageing table
+    search/            the ⌘K dialog
     layout/            header (with mobile menu), footer, logo, theme toggle, back-to-top
     marketing/         hero, building panel, features, steps, pricing, FAQ, testimonials, CTA
     providers/         theme (next-themes) and toast context
@@ -132,6 +135,7 @@ src/
     maintenance.ts     references, response targets, status machine (pure, tested)
     notifications.ts   event catalogue, channels, quiet hours, dedupe (pure, tested)
     reports.ts         ageing, statements, CSV escaping (pure, tested)
+    search.ts          query parsing, LIKE escaping, ranking, paging (pure, tested)
     messaging/         email and SMS providers, both no-ops without keys
     gateway/           SSLCommerz adapter and IPN signature verification
     rate-limit.ts      fixed-window limiter used by middleware
@@ -143,7 +147,7 @@ supabase/
   seed.sql             sample building and ledger
 docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md, PERMISSIONS.md,
                        PAYMENTS.md, HANDOVER.md, GATE.md, MAINTENANCE.md,
-                       NOTIFICATIONS.md, REPORTS.md
+                       NOTIFICATIONS.md, REPORTS.md, SEARCH.md
 tests/                 permission, unit-numbering and rent-split checks (no database)
 ```
 
@@ -231,7 +235,7 @@ once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 
 ## What comes next
 
-Phase 4 (RBAC and role dashboards) → Phase 13 (search and filtering) →
+Phase 4 (RBAC and role dashboards) → Phase 14 (performance and polish) →
 Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
 
 Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part

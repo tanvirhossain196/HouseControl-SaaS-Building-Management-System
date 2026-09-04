@@ -14,7 +14,7 @@
     "db:types": "supabase gen types typescript --project-id \"$SUPABASE_PROJECT_ID\" --schema public > src/types/database.ts",
     "test:permissions": "tsx tests/permissions.test.ts",
     "test:units": "tsx tests/units.test.ts",
-    "test": "npm run test:permissions && npm run test:units && npm run test:rent && npm run test:rent-flow && npm run test:billing && npm run test:gateway && npm run test:otp && npm run test:gate && npm run test:maintenance && npm run test:notifications && npm run test:reports",
+    "test": "npm run test:permissions && npm run test:units && npm run test:rent && npm run test:rent-flow && npm run test:billing && npm run test:gateway && npm run test:otp && npm run test:gate && npm run test:maintenance && npm run test:notifications && npm run test:reports && npm run test:search",
     "test:rent": "tsx tests/rent-split.test.ts",
     "test:rent-flow": "tsx tests/rent-flow.test.ts",
     "test:billing": "tsx tests/billing.test.ts",
@@ -23,7 +23,8 @@
     "test:gate": "tsx tests/gate.test.ts",
     "test:maintenance": "tsx tests/maintenance.test.ts",
     "test:notifications": "tsx tests/notifications.test.ts",
-    "test:reports": "tsx tests/reports.test.ts"
+    "test:reports": "tsx tests/reports.test.ts",
+    "test:search": "tsx tests/search.test.ts"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
