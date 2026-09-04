@@ -36,7 +36,6 @@ export const navigation: NavSection[] = [
         label: 'Residents',
         href: '/admin/residents',
         permission: 'resident.invite',
-        soon: true,
       },
       { label: 'Invites', href: '/admin/team', permission: 'org.team.manage' },
     ],
@@ -47,6 +46,7 @@ export const navigation: NavSection[] = [
       { label: 'Dues', href: '/dues', permission: 'report.self.view' },
       { label: 'Payments', href: '/payments', permission: 'payment.review' },
       { label: 'Expenses', href: '/expenses', permission: 'expense.manage', soon: true },
+      { label: 'Reports', href: '/reports', permission: 'report.flat.view' },
     ],
   },
   {
