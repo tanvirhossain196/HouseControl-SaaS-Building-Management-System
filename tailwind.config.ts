@@ -38,10 +38,14 @@ const config: Config = {
         lead: ['1.0625rem', { lineHeight: '1.65' }],
       },
       borderRadius: {
-        tile: '5px',
-        control: '9px',
-        panel: '14px',
-        sheet: '20px',
+        // Squared off in the polish pass. The building this runs is made of
+        // rectangles — flats, floors, a rent register — and softer corners
+        // read as a consumer app rather than a ledger. The four steps still
+        // encode hierarchy; they just start closer to the corner.
+        tile: '2px',
+        control: '4px',
+        panel: '6px',
+        sheet: '8px',
       },
       spacing: {
         // 8px grid helpers

@@ -47,6 +47,15 @@ export default async function VerifyPhonePage({
         <AuthCard
           title="Verify your mobile number"
           description="One code by SMS. This number is what a moderator handover is confirmed against, so it has to be yours."
+          footer={
+            <p>
+              Not now?{' '}
+              <Link href={next} className="font-medium text-primary hover:underline">
+                Skip this
+              </Link>{' '}
+              — everything except moderating a flat works without it.
+            </p>
+          }
         >
           <PhoneVerification next={next} />
         </AuthCard>

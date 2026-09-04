@@ -3,8 +3,17 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
+/**
+ * One base for every field.
+ *
+ * The hover is a border and a background together: on a dark screen a border
+ * alone at these sizes is close to invisible, and the field should answer the
+ * pointer before it is clicked. Focus keeps the ring, because hover is
+ * courtesy and focus is information — someone tabbing through needs to know
+ * exactly where they are.
+ */
 const fieldBase =
-  'w-full rounded-control border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/70 transition-colors duration-150 hover:border-ink/20 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:cursor-not-allowed disabled:bg-raised disabled:opacity-60 aria-[invalid=true]:border-overdue aria-[invalid=true]:focus:ring-overdue/25'
+  'w-full rounded-control border border-line bg-surface px-3 text-sm text-ink placeholder:text-muted/60 transition-[border-color,background-color,box-shadow] duration-150 hover:border-ink/25 hover:bg-raised/40 focus:border-primary focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:bg-raised disabled:opacity-60 aria-[invalid=true]:border-overdue aria-[invalid=true]:hover:border-overdue aria-[invalid=true]:focus:ring-overdue/25'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 

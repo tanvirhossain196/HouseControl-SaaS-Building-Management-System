@@ -81,7 +81,7 @@ export default async function DashboardPage() {
             title="No building yet"
             body="An owner or a flat moderator invites you by email. Open the invite link and this dashboard fills up with your flat, your dues and your gate log."
             action={
-              <Link href="/contact" className={buttonVariants({ variant: 'outline' })}>
+              <Link href="/onboarding/building" className={buttonVariants()}>
                 I am the owner — set up my building
               </Link>
             }

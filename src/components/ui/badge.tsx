@@ -3,7 +3,9 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium',
+  // Square like everything else. The dot inside stays round — it is a status
+  // light, not a container.
+  'inline-flex items-center gap-1.5 rounded-control px-2 py-0.5 text-xs font-medium',
   {
     variants: {
       tone: {

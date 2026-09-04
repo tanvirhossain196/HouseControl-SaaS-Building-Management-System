@@ -10,7 +10,10 @@ export function Card({
     <div
       className={cn(
         'rounded-panel border border-line bg-surface',
-        interactive && 'transition-colors duration-150 hover:border-ink/20',
+        // A card you can click should lift slightly, not just change its
+        // border: on a dark background the border change alone is missable.
+        interactive &&
+          'transition-[border-color,box-shadow] duration-150 hover:border-ink/25 hover:shadow-panel',
         className,
       )}
       {...props}

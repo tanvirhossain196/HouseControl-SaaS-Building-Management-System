@@ -6,10 +6,10 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
 import { Logo } from '@/components/layout/logo'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { GlobalSearch } from '@/components/search/global-search'
-import { SignOutButton } from '@/components/auth/sign-out-button'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { listNotifications, unreadCount } from '@/services/notifications.service'
-import { Avatar } from '@/components/ui/avatar'
+import { ProfileMenu } from '@/components/layout/profile-menu'
+import { roleLabels } from '@/lib/auth/permissions'
 
 /**
  * Everything behind sign-in.
@@ -36,14 +36,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-3">
               <NotificationBell notifications={notifications} unread={unread} />
               <ThemeToggle />
-              <Link
-                href="/onboarding/phone"
-                className="hidden sm:block"
-                aria-label="Your profile and phone number"
-              >
-                <Avatar name={session.profile?.full_name ?? session.email} size="sm" />
-              </Link>
-              <SignOutButton />
+              <ProfileMenu
+                name={session.profile?.full_name ?? session.email}
+                email={session.email}
+                role={roleLabels[role]}
+                phoneVerified={session.isPhoneVerified}
+              />
             </div>
           </div>
         </header>
