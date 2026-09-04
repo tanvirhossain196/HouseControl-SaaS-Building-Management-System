@@ -11,12 +11,12 @@ Passwords alone never grant access.
 
 ## The four ways in
 
-| Path | Verification | Where it lands |
-| --- | --- | --- |
-| Google OAuth | Google has verified the address | `/auth/callback` → `/dashboard` |
+| Path             | Verification                                     | Where it lands                                  |
+| ---------------- | ------------------------------------------------ | ----------------------------------------------- |
+| Google OAuth     | Google has verified the address                  | `/auth/callback` → `/dashboard`                 |
 | Email + password | Confirmation link, required before first sign-in | `/check-email` → callback → `/onboarding/phone` |
-| Magic link | The link itself is the proof | `/check-email` → callback → `/dashboard` |
-| Password reset | Single-use link, one hour | callback → `/reset-password` |
+| Magic link       | The link itself is the proof                     | `/check-email` → callback → `/dashboard`        |
+| Password reset   | Single-use link, one hour                        | callback → `/reset-password`                    |
 
 Phone verification (`/onboarding/phone`) is separate from sign-in. It gates moderator
 work rather than access, because the Phase 8 role handover sends its OTP to that number.
@@ -101,14 +101,14 @@ importing it from a client component fails the build rather than shipping the ke
 
 ## Verified in this phase
 
-| Check | Result |
-| --- | --- |
-| `/dashboard` while signed out | 307 → `/sign-in?next=%2Fdashboard` |
-| `/onboarding/phone` while signed out | 307 → `/sign-in?next=%2Fonboarding%2Fphone` |
-| `POST` with a foreign `Origin` | 403, request never reaches the handler |
-| 61st request in a minute | 429 with `Retry-After` and rate-limit headers |
-| Security headers on every response | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` |
-| Site with no Supabase keys | marketing pages still render |
+| Check                                | Result                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------ |
+| `/dashboard` while signed out        | 307 → `/sign-in?next=%2Fdashboard`                                                   |
+| `/onboarding/phone` while signed out | 307 → `/sign-in?next=%2Fonboarding%2Fphone`                                          |
+| `POST` with a foreign `Origin`       | 403, request never reaches the handler                                               |
+| 61st request in a minute             | 429 with `Retry-After` and rate-limit headers                                        |
+| Security headers on every response   | `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` |
+| Site with no Supabase keys           | marketing pages still render                                                         |
 
 Sign-in against a real project cannot be exercised without Supabase credentials — run
 through it once after step 6 above.

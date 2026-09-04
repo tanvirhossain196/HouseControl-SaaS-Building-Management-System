@@ -9,42 +9,42 @@ below.
 An owner is not "a moderator with more". Each role holds a different set, in a different
 scope:
 
-| Role | Scope | Held through |
-| --- | --- | --- |
-| `super_admin` | platform | `profiles.platform_role` |
-| `admin` (owner) | one organization | `org_members` |
-| `guard` | one organization | `org_members` |
-| `moderator` | one flat | `flat_members` |
-| `resident` | one flat | `flat_members` |
+| Role            | Scope            | Held through             |
+| --------------- | ---------------- | ------------------------ |
+| `super_admin`   | platform         | `profiles.platform_role` |
+| `admin` (owner) | one organization | `org_members`            |
+| `guard`         | one organization | `org_members`            |
+| `moderator`     | one flat         | `flat_members`           |
+| `resident`      | one flat         | `flat_members`           |
 
 One person can hold several at once — an owner who also rents a flat elsewhere. The
 dashboard they land on is decided by `primaryRole()`, highest authority first.
 
 ## The matrix
 
-| Permission | Owner | Moderator | Resident | Guard |
-| --- | :-: | :-: | :-: | :-: |
-| `org.manage`, `org.billing.manage`, `org.team.manage` | ● | | | |
-| `org.audit.view` | ● | | | |
-| `building.create` / `edit` / `archive` | ● | | | |
-| `flat.create` / `edit` / `archive` | ● | | | |
-| `flat.assign_moderator` | ● | | | |
-| `landlord_rent.manage` | ● | | | |
-| `resident.invite` / `resident.remove` | ● | ● | | |
-| `rent.assign` | ● | ● | | |
-| `moderator.transfer` | ● | ● | | |
-| `due.manage` | ● | ● | | |
-| `expense.manage` | ● | ● | | |
-| `payment.review` | ● | ● | | |
-| `payment.submit` | ● | ● | ● | |
-| `maintenance.create` | ● | ● | ● | ● |
-| `maintenance.assign` / `resolve` | ● | ● | | |
-| `visitor.log` | ● | ● | | ● |
-| `visitor.preapprove` | ● | ● | ● | |
-| `visitor.block` | ● | | | |
-| `report.org.view` | ● | | | |
-| `report.flat.view` | ● | ● | | |
-| `report.self.view` | ● | ● | ● | |
+| Permission                                            | Owner | Moderator | Resident | Guard |
+| ----------------------------------------------------- | :---: | :-------: | :------: | :---: |
+| `org.manage`, `org.billing.manage`, `org.team.manage` |   ●   |           |          |       |
+| `org.audit.view`                                      |   ●   |           |          |       |
+| `building.create` / `edit` / `archive`                |   ●   |           |          |       |
+| `flat.create` / `edit` / `archive`                    |   ●   |           |          |       |
+| `flat.assign_moderator`                               |   ●   |           |          |       |
+| `landlord_rent.manage`                                |   ●   |           |          |       |
+| `resident.invite` / `resident.remove`                 |   ●   |     ●     |          |       |
+| `rent.assign`                                         |   ●   |     ●     |          |       |
+| `moderator.transfer`                                  |   ●   |     ●     |          |       |
+| `due.manage`                                          |   ●   |     ●     |          |       |
+| `expense.manage`                                      |   ●   |     ●     |          |       |
+| `payment.review`                                      |   ●   |     ●     |          |       |
+| `payment.submit`                                      |   ●   |     ●     |    ●     |       |
+| `maintenance.create`                                  |   ●   |     ●     |    ●     |   ●   |
+| `maintenance.assign` / `resolve`                      |   ●   |     ●     |          |       |
+| `visitor.log`                                         |   ●   |     ●     |          |   ●   |
+| `visitor.preapprove`                                  |   ●   |     ●     |    ●     |       |
+| `visitor.block`                                       |   ●   |           |          |       |
+| `report.org.view`                                     |   ●   |           |          |       |
+| `report.flat.view`                                    |   ●   |     ●     |          |       |
+| `report.self.view`                                    |   ●   |     ●     |    ●     |       |
 
 `super_admin` holds everything. The guard row is the one worth reading twice: the gate,
 repairs they spot, and nothing financial at all.
@@ -52,10 +52,10 @@ repairs they spot, and nothing financial at all.
 ## Scope is half the question
 
 ```ts
-can(ctx, 'payment.review', { flatId })            // moderator of that flat?
-can(ctx, 'building.edit', { orgId })              // admin of that organization?
-can(ctx, 'payment.review', { orgId, flatId })     // admin of the org the flat sits in
-can(ctx, 'payment.review')                        // "anywhere at all?" — for menus only
+can(ctx, 'payment.review', { flatId }) // moderator of that flat?
+can(ctx, 'building.edit', { orgId }) // admin of that organization?
+can(ctx, 'payment.review', { orgId, flatId }) // admin of the org the flat sits in
+can(ctx, 'payment.review') // "anywhere at all?" — for menus only
 ```
 
 An owner's flat-level rights only apply inside their own organization, so a flat-scoped

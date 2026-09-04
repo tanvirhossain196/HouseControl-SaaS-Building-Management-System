@@ -6,12 +6,12 @@ the argument six months later about whether it was fixed.
 
 ## Who may do what
 
-| | Report | Comment | Assign, start work | Resolve | Withdraw |
-| --- | :-: | :-: | :-: | :-: | :-: |
-| Resident | ● | ● | | | own only |
-| Moderator | ● | ● | ● | ● | own only |
-| Owner | ● | ● | ● | ● | own only |
-| Guard | ● | ● | | | own only |
+|           | Report | Comment | Assign, start work | Resolve | Withdraw |
+| --------- | :----: | :-----: | :----------------: | :-----: | :------: |
+| Resident  |   ●    |    ●    |                    |         | own only |
+| Moderator |   ●    |    ●    |         ●          |    ●    | own only |
+| Owner     |   ●    |    ●    |         ●          |    ●    | own only |
+| Guard     |   ●    |    ●    |                    |         | own only |
 
 **The person who reported a problem cannot mark it resolved.** That judgement belongs to
 whoever did the work; a complaint closed by the complainant is one nobody can audit. They
@@ -33,12 +33,12 @@ the unique index and the second one retries.
 
 ## Response targets
 
-| Priority | Target | What it means |
-| --- | --- | --- |
-| Urgent | 4 hours | water coming through a ceiling, someone in the lift |
-| High | 24 hours | it is affecting daily life |
-| Normal | 3 days | this week |
-| Low | 7 days | whenever someone is passing |
+| Priority | Target   | What it means                                       |
+| -------- | -------- | --------------------------------------------------- |
+| Urgent   | 4 hours  | water coming through a ceiling, someone in the lift |
+| High     | 24 hours | it is affecting daily life                          |
+| Normal   | 3 days   | this week                                           |
+| Low      | 7 days   | whenever someone is passing                         |
 
 The target is shown in the report form as the priority changes, so "urgent" reads as a
 promise the building has to keep rather than a way to feel heard.
@@ -85,15 +85,15 @@ by hand. That is the correct direction to fail in.
 
 Verified against a live Postgres instance:
 
-| Attempt | Result |
-| --- | --- |
-| Status changed | timeline row written automatically |
-| Resolving with no `resolved_at` | rejected by `maintenance_resolved_has_timestamp` |
-| Two requests sharing a reference in one building | rejected by the unique constraint |
-| A note with only whitespace | rejected by `maintenance_note_has_text` |
-| An event of an unknown kind | rejected by `maintenance_event_kind_known` |
-| A negative repair cost | rejected by the cost check |
-| A seventh photo | rejected by `maintenance_photo_limit` |
+| Attempt                                          | Result                                           |
+| ------------------------------------------------ | ------------------------------------------------ |
+| Status changed                                   | timeline row written automatically               |
+| Resolving with no `resolved_at`                  | rejected by `maintenance_resolved_has_timestamp` |
+| Two requests sharing a reference in one building | rejected by the unique constraint                |
+| A note with only whitespace                      | rejected by `maintenance_note_has_text`          |
+| An event of an unknown kind                      | rejected by `maintenance_event_kind_known`       |
+| A negative repair cost                           | rejected by the cost check                       |
+| A seventh photo                                  | rejected by `maintenance_photo_limit`            |
 
 ## Still to come
 

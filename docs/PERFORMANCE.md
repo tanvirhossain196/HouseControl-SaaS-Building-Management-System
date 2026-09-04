@@ -5,11 +5,11 @@ looked slow was already fine, and saying so is part of the work.
 
 ## What changed
 
-| | Before | After |
-| --- | --- | --- |
-| `/contact` first load | 112 kB | 98.5 kB |
-| `/admin/flats` queries, 6 buildings | 19 | 4 |
-| Screens with a loading state | root only | every screen behind sign-in |
+|                                     | Before    | After                       |
+| ----------------------------------- | --------- | --------------------------- |
+| `/contact` first load               | 112 kB    | 98.5 kB                     |
+| `/admin/flats` queries, 6 buildings | 19        | 4                           |
+| Screens with a loading state        | root only | every screen behind sign-in |
 
 **Zod was shipping to the browser.** The marketing contact form validated in the client,
 which put 14 kB of schema library on a public page to check an email address. Validation

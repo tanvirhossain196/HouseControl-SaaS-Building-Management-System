@@ -70,28 +70,28 @@ confirmed payments and moves `status` between `open`, `partially_paid` and `paid
 only way to change a balance is to confirm or unconfirm a payment. Verified against a
 live Postgres instance:
 
-| Action | Result on the due |
-| --- | --- |
-| Pending payment submitted | `amount_paid` unchanged, still `open` |
-| Part of the amount confirmed | `partially_paid` |
-| The remainder confirmed | `paid` |
-| A confirmed payment reversed | back to `partially_paid`, with the right balance |
-| Billing the same month twice | one row, not two |
-| Two payments given one receipt number | rejected by the unique constraint |
-| `amount_paid` pushed above `amount` | rejected by `due_not_overpaid` |
+| Action                                | Result on the due                                |
+| ------------------------------------- | ------------------------------------------------ |
+| Pending payment submitted             | `amount_paid` unchanged, still `open`            |
+| Part of the amount confirmed          | `partially_paid`                                 |
+| The remainder confirmed               | `paid`                                           |
+| A confirmed payment reversed          | back to `partially_paid`, with the right balance |
+| Billing the same month twice          | one row, not two                                 |
+| Two payments given one receipt number | rejected by the unique constraint                |
+| `amount_paid` pushed above `amount`   | rejected by `due_not_overpaid`                   |
 
 **Money is `numeric(12,2)`, never float.** Taka amounts must not drift.
 
 **Partial unique indexes carry the business rules:**
 
-| Index | Rule |
-| --- | --- |
-| `flat_members_single_moderator` | one active moderator per flat |
+| Index                              | Rule                                 |
+| ---------------------------------- | ------------------------------------ |
+| `flat_members_single_moderator`    | one active moderator per flat        |
 | `flat_members_one_active_per_user` | a person joins a flat once at a time |
-| `subscriptions_one_active_per_org` | one live plan per organization |
-| `invites_one_pending_per_target` | one open invite per email per flat |
-| `moderator_transfers_one_pending` | one handover in flight per flat |
-| `visitors_active_entry_code` | entry codes unique while usable |
+| `subscriptions_one_active_per_org` | one live plan per organization       |
+| `invites_one_pending_per_target`   | one open invite per email per flat   |
+| `moderator_transfers_one_pending`  | one handover in flight per flat      |
+| `visitors_active_entry_code`       | entry codes unique while usable      |
 
 **Triggers hold the rules a form cannot be trusted with:** rent shares may not exceed
 the flat rent, expense shares may not exceed the expense, a moderator handover needs a
@@ -108,11 +108,11 @@ financial history has to survive a unit being taken off the market.
 
 Enabled on every table. Four helper functions decide access:
 
-| Function | Returns |
-| --- | --- |
-| `auth_is_super_admin()` | platform staff |
-| `auth_org_ids(role)` | organizations the caller belongs to |
-| `auth_flat_ids(role)` | flats the caller lives in |
+| Function                  | Returns                                                               |
+| ------------------------- | --------------------------------------------------------------------- |
+| `auth_is_super_admin()`   | platform staff                                                        |
+| `auth_org_ids(role)`      | organizations the caller belongs to                                   |
+| `auth_flat_ids(role)`     | flats the caller lives in                                             |
 | `auth_managed_flat_ids()` | flats the caller moderates, plus every flat in an org they administer |
 
 What that produces:

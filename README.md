@@ -33,61 +33,61 @@ npm run db:migrate   # applies supabase/migrations in order
 npm run db:seed      # one building, four flats, a September ledger
 ```
 
-| Script | What it does |
-| --- | --- |
-| `npm run dev` / `build` / `start` | Next.js |
-| `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit` |
-| `npm test` | 203 checks across thirteen suites, including architectural boundary checks |
-| `npm run db:migrate` / `db:seed` | apply migrations, load sample data |
-| `npm run db:types` | regenerate `src/types/database.ts` from the live schema |
+| Script                                  | What it does                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------- |
+| `npm run dev` / `build` / `start`       | Next.js                                                                    |
+| `npm run lint` / `format` / `typecheck` | ESLint, Prettier, `tsc --noEmit`                                           |
+| `npm test`                              | 203 checks across thirteen suites, including architectural boundary checks |
+| `npm run db:migrate` / `db:seed`        | apply migrations, load sample data                                         |
+| `npm run db:types`                      | regenerate `src/types/database.ts` from the live schema                    |
 
 Requires Node 18.18+ (Node 20 or 22 recommended).
 
-## Routes in this phase
+## Routes
 
-| Route | What it is |
-| --- | --- |
-| `/` | Landing page — hero building panel, features, how it works, pricing, testimonials, FAQ |
-| `/about` | Who this is for and what we are careful about |
-| `/contact` | Validated contact form (client-side only until Phase 2) |
-| `/faq` | Full FAQ with `FAQPage` structured data |
-| `/privacy`, `/terms`, `/cookies` | Legal pages — placeholder copy, have a lawyer review before launch |
-| `/styleguide` | Every component and token in one page. `noindex`, not linked from the site |
-| `/sign-in`, `/sign-up` | Google, email + password, or magic link |
-| `/forgot-password`, `/reset-password`, `/check-email` | Password recovery |
-| `/auth/callback`, `/auth/error` | Where every verification link lands |
-| `/dashboard` | One route, four screens — owner, moderator, resident, or an empty state |
-| `/admin` | Owner-only: buildings, with unit and occupancy counts |
-| `/admin/buildings/[id]` | One building: unit grid, flats table, bulk unit generation |
-| `/admin/flats` | Every flat across the organization, searchable |
-| `/admin/residents` | Every resident in the organization, searchable |
-| `/flats` | The flats you live in or moderate |
-| `/flats/[id]` | One flat: residents, rent split, invites, moderator, ledger |
-| `/dues` | A resident's own charges, with a way to record each payment |
-| `/payments` | The review queue: confirm, reject or reverse |
-| `/payments/return` | Where the gateway sends the resident back to |
-| `/api/payments/webhook/sslcommerz` | IPN endpoint — signature-verified, public by necessity |
-| `/api/receipts/[id]` | PDF receipt for a confirmed payment |
-| `/admin/team`, `/admin/audit` | Invites and the audit log |
-| `/gate` | Guard-only: log arrivals and exits, check codes, see the blocklist |
-| `/visitors` | A resident's own visitors, and pre-approval codes for guests |
-| `/maintenance` | Complaints and repairs, filtered by what the role can see |
-| `/maintenance/[id]` | One request: its timeline, notes, and the work done |
-| `/search` | Everything the role can see, in one place |
-| `/api/search` | Backs the header search box |
-| `/reports` | Collection, arrears ageing, expenses, who owes what |
-| `/api/reports/[kind]` | Ledger, arrears and expense CSVs |
-| `/api/statements/[flatId]` | A month's statement for one flat, as a PDF |
-| `/settings/notifications` | What each person gets, and on which channel |
-| `/api/cron/reminders` | The daily reminder job, behind a shared secret |
-| `/platform` | Platform staff only |
-| `/invite/[token]` | Accept an invitation into a building |
-| `/forbidden` | Signed in, wrong role |
-| `/onboarding/phone` | Mobile OTP, required before moderating a flat |
-| `/sitemap.xml`, `/robots.txt` | Generated from `src/lib/site.ts` |
-| `/api/health` | Liveness probe, no auth |
-| `/api/buildings` | Reference endpoint showing the validate → service → envelope pattern |
-| 404 / error / loading | `not-found.tsx`, `error.tsx`, `loading.tsx` |
+| Route                                                 | What it is                                                                             |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `/`                                                   | Landing page — hero building panel, features, how it works, pricing, testimonials, FAQ |
+| `/about`                                              | Who this is for and what we are careful about                                          |
+| `/contact`                                            | Validated contact form (client-side only until Phase 2)                                |
+| `/faq`                                                | Full FAQ with `FAQPage` structured data                                                |
+| `/privacy`, `/terms`, `/cookies`                      | Legal pages — placeholder copy, have a lawyer review before launch                     |
+| `/styleguide`                                         | Every component and token in one page. `noindex`, not linked from the site             |
+| `/sign-in`, `/sign-up`                                | Google, email + password, or magic link                                                |
+| `/forgot-password`, `/reset-password`, `/check-email` | Password recovery                                                                      |
+| `/auth/callback`, `/auth/error`                       | Where every verification link lands                                                    |
+| `/dashboard`                                          | One route, four screens — owner, moderator, resident, or an empty state                |
+| `/admin`                                              | Owner-only: buildings, with unit and occupancy counts                                  |
+| `/admin/buildings/[id]`                               | One building: unit grid, flats table, bulk unit generation                             |
+| `/admin/flats`                                        | Every flat across the organization, searchable                                         |
+| `/admin/residents`                                    | Every resident in the organization, searchable                                         |
+| `/flats`                                              | The flats you live in or moderate                                                      |
+| `/flats/[id]`                                         | One flat: residents, rent split, invites, moderator, ledger                            |
+| `/dues`                                               | A resident's own charges, with a way to record each payment                            |
+| `/payments`                                           | The review queue: confirm, reject or reverse                                           |
+| `/payments/return`                                    | Where the gateway sends the resident back to                                           |
+| `/api/payments/webhook/sslcommerz`                    | IPN endpoint — signature-verified, public by necessity                                 |
+| `/api/receipts/[id]`                                  | PDF receipt for a confirmed payment                                                    |
+| `/admin/team`, `/admin/audit`                         | Invites and the audit log                                                              |
+| `/gate`                                               | Guard-only: log arrivals and exits, check codes, see the blocklist                     |
+| `/visitors`                                           | A resident's own visitors, and pre-approval codes for guests                           |
+| `/maintenance`                                        | Complaints and repairs, filtered by what the role can see                              |
+| `/maintenance/[id]`                                   | One request: its timeline, notes, and the work done                                    |
+| `/search`                                             | Everything the role can see, in one place                                              |
+| `/api/search`                                         | Backs the header search box                                                            |
+| `/reports`                                            | Collection, arrears ageing, expenses, who owes what                                    |
+| `/api/reports/[kind]`                                 | Ledger, arrears and expense CSVs                                                       |
+| `/api/statements/[flatId]`                            | A month's statement for one flat, as a PDF                                             |
+| `/settings/notifications`                             | What each person gets, and on which channel                                            |
+| `/api/cron/reminders`                                 | The daily reminder job, behind a shared secret                                         |
+| `/platform`                                           | Platform staff only                                                                    |
+| `/invite/[token]`                                     | Accept an invitation into a building                                                   |
+| `/forbidden`                                          | Signed in, wrong role                                                                  |
+| `/onboarding/phone`                                   | Mobile OTP, required before moderating a flat                                          |
+| `/sitemap.xml`, `/robots.txt`                         | Generated from `src/lib/site.ts`                                                       |
+| `/api/health`                                         | Liveness probe, no auth                                                                |
+| `/api/buildings`                                      | Reference endpoint showing the validate → service → envelope pattern                   |
+| 404 / error / loading                                 | `not-found.tsx`, `error.tsx`, `loading.tsx`                                            |
 
 ## Project structure
 
@@ -160,13 +160,13 @@ Supabase directly. The two documents in `docs/` explain why both boundaries exis
 Tokens are CSS custom properties in `src/app/globals.css` and are exposed to Tailwind in
 `tailwind.config.ts`. Both themes are defined; `class` strategy, system default.
 
-| Token | Light value | Role |
-| --- | --- | --- |
-| `paper` / `surface` / `raised` | `#F6F7FB` / `#FFFFFF` / `#F0F2F8` | page, cards, wells |
-| `ink` / `muted` / `line` | `#131A2B` / `#59627A` / `#E0E4EE` | text, secondary text, borders |
-| `primary` | `#2F4BD8` | actions, authority |
-| `accent` | `#D69108` | alerts, upsell, the lit unit in the logo |
-| `paid` / `due` / `overdue` / `vacant` | `#0F7A57` / `#B8710A` / `#C2352C` / `#969EB2` | rent status — data, not decoration |
+| Token                                 | Light value                                   | Role                                     |
+| ------------------------------------- | --------------------------------------------- | ---------------------------------------- |
+| `paper` / `surface` / `raised`        | `#F6F7FB` / `#FFFFFF` / `#F0F2F8`             | page, cards, wells                       |
+| `ink` / `muted` / `line`              | `#131A2B` / `#59627A` / `#E0E4EE`             | text, secondary text, borders            |
+| `primary`                             | `#2F4BD8`                                     | actions, authority                       |
+| `accent`                              | `#D69108`                                     | alerts, upsell, the lit unit in the logo |
+| `paid` / `due` / `overdue` / `vacant` | `#0F7A57` / `#B8710A` / `#C2352C` / `#969EB2` | rent status — data, not decoration       |
 
 - **Type:** Inter for everything, JetBrains Mono for numerals — flat numbers, amounts, times.
   Tabular figures via the `.tabular` class so columns line up.
@@ -217,27 +217,80 @@ list drives the sidebar, the server guards and the API, and the RLS policies enf
 same rules underneath. An owner who also rents a flat somewhere else holds both roles at
 once and lands on the owner dashboard. See `docs/PERMISSIONS.md` for the matrix.
 
-## Known limitations at this phase
+## Tests
 
-- Phone OTP needs an SMS provider connected in Supabase; the rest of auth works without one.
-- The gateway is SSLCommerz only; a deployment without credentials falls back to the
-  manual path, which is a working deployment.
-- PDF receipts print Bangla names only if a Bangla font is placed in `public/fonts`.
-- Without provider keys, email and SMS are logged rather than sent — the app still works.
-- Invite links are shown on screen to copy, because email sending lands in Phase 11.
-- `src/types/database.ts` is hand-maintained until a Supabase project exists; keep it in
-  step with any migration, then switch to `npm run db:types`.
-- Rate limiting is in-memory and counts per instance — replace with Upstash Redis before
-  running more than one.
-- The contact form validates but does not send; the landing page uses sample data from
-  `src/content/building.ts`.
-- Legal copy is placeholder text.
+```bash
+npm test          # 203 assertions, no database, ~3s
+npm run test:db   # schema built from nothing, 40 invariants, needs a Postgres
+```
 
-## What comes next
+The TypeScript suites cover the rules that can be decided without data: the permission
+matrix, rent splitting to the paisa, billing dates across leap years, gateway signature
+forgeries, handover code lockouts, entry codes, notification channels and quiet hours, CSV
+escaping, search escaping and paging. They are pure functions, so there are no fixtures and
+no database to stand up.
 
-Phase 4 (RBAC and role dashboards) → Phase 15 (testing, documentation and deployment) →
-Phase 7 (payments) → … → Phase 15 (testing, docs, deploy).
+`test:db` builds the schema from an empty database, loads the seed, and asserts what the
+database refuses on its own: rent shares over the flat total, two moderators on one flat, a
+due paid past its amount, a replayed webhook, a reminder sent twice in a day. Building from
+empty every time is what catches a migration that only worked because of what was already
+in somebody's local database.
 
-Two things worth deciding before Phase 4: the guard/gate role from Phase 9 should be part
-of the role model from the start, and Phase 7 is large enough to split into "manual
-payments + dues ledger" and "gateway integration".
+`npm run test:boundaries`, part of `npm test`, walks the source tree for the mistakes that
+pass typecheck and lint: a client component importing a server-only module, `zod` in a
+public page's bundle, a secret name in browser code, an unguarded write handler.
+
+## Known limitations
+
+Honest list, because the next person needs it more than a feature tour.
+
+- **Not production-tested.** No real building has run a month on this. The gateway has only
+  been exercised in SSLCommerz sandbox.
+- **Legal copy is placeholder text.** Privacy, terms and cookies need a lawyer before
+  launch.
+- **`src/types/database.ts` is hand-maintained.** Once a Supabase project exists, switch to
+  `npm run db:types` and stop editing it alongside migrations.
+- **Rate limiting is in-memory**, so it counts per instance. Move it to Upstash Redis before
+  running more than one; `src/lib/rate-limit.ts` keeps its interface.
+- **PDF receipts print Bangla names only** if a Bangla font is placed at
+  `public/fonts/NotoSansBengali-Regular.ttf`. Without it a Bangla name becomes a marker
+  rather than a broken glyph.
+- **Photos are URLs, not uploads.** Complaints and visitors accept a URL; there is no
+  storage bucket yet.
+- **Push notifications are in the catalogue with no transport.** They resolve to nothing
+  until a mobile app exists.
+- **Invite links are copied from the screen** unless `RESEND_API_KEY` is set.
+- **The landing page uses sample data** from `src/content/building.ts`, on purpose.
+
+## What I would do next
+
+1. **Run one real building for a month** before adding anything. Every remaining question —
+   whether the reminder schedule is right, whether guards will use the gate screen, whether
+   moderators confirm payments promptly — is answered by that and by nothing else.
+2. **Storage for photos**, which complaints and the gate both want and neither has.
+3. **Redis for rate limiting**, before the second instance rather than after.
+4. **A second gateway.** bKash direct would remove a fee layer, and the adapter boundary in
+   `src/lib/gateway` was drawn for it.
+5. **Bengali throughout.** The schema carries `profiles.locale` and nothing reads it yet.
+   Half the residents in the target market would rather use Bangla, and the product speaks
+   to them entirely in English.
+
+## Documentation
+
+|                         |                                                 |
+| ----------------------- | ----------------------------------------------- |
+| `docs/ARCHITECTURE.md`  | layers, the request path, naming                |
+| `docs/DATABASE.md`      | the schema, the ERD, what the database enforces |
+| `docs/AUTH.md`          | the four sign-in paths and the Supabase setup   |
+| `docs/PERMISSIONS.md`   | the role matrix and where it is checked         |
+| `docs/PAYMENTS.md`      | manual and gateway flows, webhook trust model   |
+| `docs/HANDOVER.md`      | consented moderator transfer                    |
+| `docs/GATE.md`          | the visitor register and entry codes            |
+| `docs/MAINTENANCE.md`   | complaints, the state machine, response targets |
+| `docs/NOTIFICATIONS.md` | channels, quiet hours, deduplication            |
+| `docs/REPORTS.md`       | statements, ageing, CSV and PDF exports         |
+| `docs/SEARCH.md`        | parsing, escaping, ranking, paging              |
+| `docs/PERFORMANCE.md`   | what was measured and what changed              |
+| `docs/DEPLOYMENT.md`    | environment, migrations, rollback, monitoring   |
+| `docs/RUNBOOK.md`       | what to do when something is wrong              |
+| `CONTRIBUTING.md`       | how to work on it, and where a new rule belongs |

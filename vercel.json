@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 3 * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/receipts/[paymentId]/route.ts": { "maxDuration": 30 },
+    "src/app/api/statements/[flatId]/route.ts": { "maxDuration": 30 },
+    "src/app/api/cron/reminders/route.ts": { "maxDuration": 60 }
+  }
+}

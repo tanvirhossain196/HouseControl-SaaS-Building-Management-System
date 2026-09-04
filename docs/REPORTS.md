@@ -6,13 +6,13 @@ narrow with the role rather than the page changing.
 
 ## What is on the page
 
-| | Answers |
-| --- | --- |
-| Collection this month | how much came in, against last month |
-| Twelve-month bars | which months were chased late |
-| Arrears ageing | whether the debt is new or old |
-| Who owes what | the list an owner works down, worst first |
-| Expenses by category | where the building's money went |
+|                       | Answers                                   |
+| --------------------- | ----------------------------------------- |
+| Collection this month | how much came in, against last month      |
+| Twelve-month bars     | which months were chased late             |
+| Arrears ageing        | whether the debt is new or old            |
+| Who owes what         | the list an owner works down, worst first |
+| Expenses by category  | where the building's money went           |
 
 The ageing table is the one worth having. A total is what an owner already knows; the
 shape is what they do not. Two lakh spread across this month is a collection problem, and

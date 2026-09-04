@@ -2,11 +2,11 @@
 
 Three people use this and they see three different things.
 
-| Role | Sees | Can do |
-| --- | --- | --- |
-| Guard | everyone at their building | log arrivals, mark exits, turn people away |
-| Resident | their own flat's visitors only | pre-approve a guest, cancel that |
-| Owner | the whole building's log | everything above, plus the blocklist |
+| Role     | Sees                           | Can do                                     |
+| -------- | ------------------------------ | ------------------------------------------ |
+| Guard    | everyone at their building     | log arrivals, mark exits, turn people away |
+| Resident | their own flat's visitors only | pre-approve a guest, cancel that           |
+| Owner    | the whole building's log       | everything above, plus the blocklist       |
 
 RLS decides all of it. A resident's query for the building's visitors returns their flat's
 rows and nothing else, however it is written.
@@ -80,12 +80,12 @@ being read.
 
 Verified against a live Postgres instance:
 
-| Attempt | Result |
-| --- | --- |
-| Two live pre-approvals sharing a code | rejected by `visitors_active_entry_code` |
+| Attempt                                     | Result                                       |
+| ------------------------------------------- | -------------------------------------------- |
+| Two live pre-approvals sharing a code       | rejected by `visitors_active_entry_code`     |
 | Reusing a code after the first was consumed | allowed — the index only covers pending ones |
-| An exit timestamped before the entry | rejected by `visitor_exit_after_entry` |
-| A block with a one-word reason | rejected by the length check |
-| A second live block on one number | rejected by `blocked_visitors_one_active` |
-| Re-blocking after the first was lifted | allowed |
-| A malformed phone number on a block | rejected by the format check |
+| An exit timestamped before the entry        | rejected by `visitor_exit_after_entry`       |
+| A block with a one-word reason              | rejected by the length check                 |
+| A second live block on one number           | rejected by `blocked_visitors_one_active`    |
+| Re-blocking after the first was lifted      | allowed                                      |
+| A malformed phone number on a block         | rejected by the format check                 |

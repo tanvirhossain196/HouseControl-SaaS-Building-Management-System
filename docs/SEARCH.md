@@ -30,11 +30,11 @@ most-used untrusted input in the app, so every value goes through `escapeLike` f
 
 Verified against Postgres:
 
-| Typed | Result |
-| --- | --- |
-| `100%` | matches the literal string; 0 rows, not all 4 |
+| Typed     | Result                                        |
+| --------- | --------------------------------------------- |
+| `100%`    | matches the literal string; 0 rows, not all 4 |
 | `flat_5b` | the underscore is a character, not a wildcard |
-| `5` | still finds flat 5B |
+| `5`       | still finds flat 5B                           |
 
 The backslash is escaped **before** the wildcards. In the other order `\%` becomes `\\%`
 and the wildcard is back.

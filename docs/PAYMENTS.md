@@ -2,10 +2,10 @@
 
 Two ways money is recorded, one ledger underneath.
 
-| Path | Who acts | What confirms it |
-| --- | --- | --- |
-| Manual (bKash, bank, cash) | resident records it, moderator reviews it | a human pressing Confirm |
-| Online (SSLCommerz) | resident pays at the gateway | our own server-side validation call |
+| Path                       | Who acts                                  | What confirms it                    |
+| -------------------------- | ----------------------------------------- | ----------------------------------- |
+| Manual (bKash, bank, cash) | resident records it, moderator reviews it | a human pressing Confirm            |
+| Online (SSLCommerz)        | resident pays at the gateway              | our own server-side validation call |
 
 Either way the balance moves only through the trigger on `payments`. Nothing in the
 application writes `dues.amount_paid`.
@@ -43,30 +43,30 @@ Three things stop a double confirmation:
 
 Verified against a live Postgres instance:
 
-| Attempt | Result |
-| --- | --- |
-| Same event inserted twice | rejected by `webhook_events_unique_event` |
-| Different `val_id`, same transaction (a genuine retry after failure) | allowed |
-| Unknown `outcome` value | rejected by `webhook_outcome_known` |
-| Two payments sharing a `transaction_id` | rejected by the unique constraint |
-| Refused callbacks | still recorded, with `signature_ok = false` |
+| Attempt                                                              | Result                                      |
+| -------------------------------------------------------------------- | ------------------------------------------- |
+| Same event inserted twice                                            | rejected by `webhook_events_unique_event`   |
+| Different `val_id`, same transaction (a genuine retry after failure) | allowed                                     |
+| Unknown `outcome` value                                              | rejected by `webhook_outcome_known`         |
+| Two payments sharing a `transaction_id`                              | rejected by the unique constraint           |
+| Refused callbacks                                                    | still recorded, with `signature_ok = false` |
 
 ## What the signature check refuses
 
 `npm run test:gateway` covers these. Each is an attack that has worked on somebody's
 integration:
 
-| Forged callback | Result |
-| --- | --- |
-| Amount changed after signing | rejected |
-| `status` flipped to VALID after signing | rejected |
-| Pointed at a different transaction | rejected |
-| Signed with a guessed store password | rejected |
-| No signature at all | rejected |
-| Empty `verify_key` with an empty-string hash | rejected |
-| A signed field deleted, hoping it hashes as `''` | rejected |
-| Extra unsigned fields added by the provider | still accepted |
-| Fields sent in a different order | still accepted |
+| Forged callback                                  | Result         |
+| ------------------------------------------------ | -------------- |
+| Amount changed after signing                     | rejected       |
+| `status` flipped to VALID after signing          | rejected       |
+| Pointed at a different transaction               | rejected       |
+| Signed with a guessed store password             | rejected       |
+| No signature at all                              | rejected       |
+| Empty `verify_key` with an empty-string hash     | rejected       |
+| A signed field deleted, hoping it hashes as `''` | rejected       |
+| Extra unsigned fields added by the provider      | still accepted |
+| Fields sent in a different order                 | still accepted |
 
 The truncation case is the one worth keeping: only fields named in `verify_key` are
 hashed, so a handler that reads them straight out of the payload without checking they

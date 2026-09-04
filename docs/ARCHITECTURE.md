@@ -34,11 +34,11 @@ writes and cross-table work live.
 
 **`src/lib/supabase`** — three clients, and the difference matters:
 
-| Client | Used in | Runs as | RLS |
-| --- | --- | --- | --- |
-| `client.ts` | client components | the signed-in user | enforced |
-| `server.ts` | server components, actions, route handlers | the signed-in user | enforced |
-| `admin.ts` | webhooks, cron jobs, audit writes | service role | **bypassed** |
+| Client      | Used in                                    | Runs as            | RLS          |
+| ----------- | ------------------------------------------ | ------------------ | ------------ |
+| `client.ts` | client components                          | the signed-in user | enforced     |
+| `server.ts` | server components, actions, route handlers | the signed-in user | enforced     |
+| `admin.ts`  | webhooks, cron jobs, audit writes          | service role       | **bypassed** |
 
 `admin.ts` imports `server-only`, so importing it from a client component fails the
 build rather than leaking the service key.
@@ -89,13 +89,13 @@ one-to-one onto form field names.
 
 ## Naming
 
-| Thing | Convention | Example |
-| --- | --- | --- |
-| Database tables and columns | `snake_case`, plural tables | `flat_members.rent_share` |
-| TypeScript | `camelCase`, `PascalCase` for types | `monthlyRent`, `FlatRow` |
-| Files | `kebab-case`, `*.service.ts` for services | `buildings.service.ts` |
-| Zod schemas | `<verb><Noun>Schema` | `createFlatSchema` |
-| Audit actions | `entity.verb`, past tense | `payment.confirmed` |
+| Thing                       | Convention                                | Example                   |
+| --------------------------- | ----------------------------------------- | ------------------------- |
+| Database tables and columns | `snake_case`, plural tables               | `flat_members.rent_share` |
+| TypeScript                  | `camelCase`, `PascalCase` for types       | `monthlyRent`, `FlatRow`  |
+| Files                       | `kebab-case`, `*.service.ts` for services | `buildings.service.ts`    |
+| Zod schemas                 | `<verb><Noun>Schema`                      | `createFlatSchema`        |
+| Audit actions               | `entity.verb`, past tense                 | `payment.confirmed`       |
 
 The API speaks `camelCase`; services do the mapping to `snake_case` columns. That
 boundary is deliberate — the wire format should not change because a column was renamed.

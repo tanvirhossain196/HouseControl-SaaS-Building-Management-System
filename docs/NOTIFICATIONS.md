@@ -6,12 +6,12 @@ functions in `src/lib/notifications.ts`, and all three are tested.
 
 ## Channels
 
-| Channel | Cost | Wakes anyone | Used for |
-| --- | --- | --- | --- |
-| In-app | none | no | everything, always |
-| Email | negligible | no | most things |
-| SMS | per message | yes | overdue rent, rejected payments, handover codes |
-| Push | none | yes | reserved for the mobile app |
+| Channel | Cost        | Wakes anyone | Used for                                        |
+| ------- | ----------- | ------------ | ----------------------------------------------- |
+| In-app  | none        | no           | everything, always                              |
+| Email   | negligible  | no           | most things                                     |
+| SMS     | per message | yes          | overdue rent, rejected payments, handover codes |
+| Push    | none        | yes          | reserved for the mobile app                     |
 
 **Every notice leaves an in-app row, even when the person has switched everything off.**
 Otherwise "I was never told" has no answer in either direction.
@@ -45,14 +45,14 @@ The day is part of the key so that next month's rent reminder is still a new not
 
 Verified against a live Postgres instance:
 
-| Attempt | Result |
-| --- | --- |
-| The same reminder twice on one day | rejected by `notifications_dedupe` |
-| The same charge, next day | allowed — a new notice |
-| Two notices with no dedupe key | both stored |
-| A delivery marked sent with no timestamp | rejected |
-| An email delivery with no address | rejected |
-| An unknown delivery status | rejected |
+| Attempt                                  | Result                             |
+| ---------------------------------------- | ---------------------------------- |
+| The same reminder twice on one day       | rejected by `notifications_dedupe` |
+| The same charge, next day                | allowed — a new notice             |
+| Two notices with no dedupe key           | both stored                        |
+| A delivery marked sent with no timestamp | rejected                           |
+| An email delivery with no address        | rejected                           |
+| An unknown delivery status               | rejected                           |
 
 ## Reminder schedule
 
