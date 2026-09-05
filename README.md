@@ -236,7 +236,9 @@ escaping, search escaping and paging. They are pure functions, so there are no f
 no database to stand up.
 
 `test:db` builds the schema from an empty database, loads the seed, and asserts what the
-database refuses on its own: rent shares over the flat total, two moderators on one flat, a
+database refuses on its own. One suite runs as a signed-in user rather than the table
+owner, because the owner bypasses RLS — see `docs/RLS-INCIDENT.md` for the bug that
+taught us the difference: rent shares over the flat total, two moderators on one flat, a
 due paid past its amount, a replayed webhook, a reminder sent twice in a day. Building from
 empty every time is what catches a migration that only worked because of what was already
 in somebody's local database.

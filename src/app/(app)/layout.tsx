@@ -50,9 +50,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col lg:flex-row">
+        {/*
+          `items-start` is what lets the sidebar be sticky: in a stretched
+          flex row it would be forced to the full height of the content and
+          have nothing to stick to.
+        */}
+        <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col items-start lg:flex-row">
           <AppSidebar role={role} />
-          <main id="main" className="min-w-0 flex-1 px-5 py-8 lg:px-8 lg:py-10">
+          <main
+            id="main"
+            className="min-w-0 flex-1 px-4 py-6 sm:px-5 sm:py-8 lg:px-8 lg:py-10"
+          >
             {children}
           </main>
         </div>
