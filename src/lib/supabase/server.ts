@@ -9,6 +9,15 @@ import type { Database } from '@/types/database'
  * Runs as the signed-in user, so every query is filtered by RLS.
  */
 export function createServerSupabase() {
+  // Read the cookies first, even though the check below might throw.
+  //
+  // `cookies()` is what marks a route dynamic. Throwing before it runs left
+  // Next thinking the page could be prerendered, so `next build` tried to
+  // render it and failed on a machine with no Supabase project — a build
+  // error about missing configuration, in an app that is supposed to build
+  // without any.
+  const cookieStore = cookies()
+
   if (!hasSupabase()) {
     // A clearer failure than a schema error three frames deep: this happens
     // on a fresh checkout, and the fix is one line in .env.local.
@@ -18,7 +27,6 @@ export function createServerSupabase() {
     )
   }
 
-  const cookieStore = cookies()
   const env = publicEnv()
 
   return createServerClient<Database>(

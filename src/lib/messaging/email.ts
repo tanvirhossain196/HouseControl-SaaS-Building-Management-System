@@ -3,13 +3,19 @@ import 'server-only'
 import { site } from '@/lib/site'
 
 /**
- * Email, through Resend.
+ * Email: your own SMTP first, Resend second.
  *
  * Deliberately small: one function that sends one message and reports what
  * happened. Retries, logging and preference resolution belong to the
  * notification service, not to the transport.
  *
- * With no API key configured it reports `skipped` rather than throwing, so a
+ * SMTP is checked first on purpose. Sending from your own address is what
+ * makes an invite look like it came from the building's owner rather than
+ * from a service nobody has heard of, and it is what keeps the sending
+ * reputation yours. Resend stays as the fallback for a deployment that has no
+ * mail server.
+ *
+ * With neither configured it reports `skipped` rather than throwing, so a
  * development machine runs the whole app without a mail account.
  */
 
@@ -24,6 +30,10 @@ export async function sendEmail(input: {
   html: string
   text: string
 }): Promise<SendResult> {
+  if (process.env.SMTP_HOST) {
+    return sendOverSmtp(input)
+  }
+
   const apiKey = process.env.RESEND_API_KEY
   const from = process.env.EMAIL_FROM ?? `${site.name} <no-reply@example.com>`
 
@@ -129,4 +139,57 @@ function escapeHtml(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/**
+ * Sends through a plain SMTP server — Gmail, your hosting provider, anything
+ * that speaks the protocol.
+ *
+ * The transport is created per send rather than kept alive. On a serverless
+ * platform a pooled connection outlives the request that opened it and is
+ * torn down mid-flight, which fails in a way that looks like the mail server
+ * rejecting the message. One connection per email is slower and honest.
+ */
+async function sendOverSmtp(input: {
+  to: string
+  subject: string
+  html: string
+  text: string
+}): Promise<SendResult> {
+  const host = process.env.SMTP_HOST
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASSWORD
+  const from = process.env.EMAIL_FROM ?? user ?? `${site.name} <no-reply@example.com>`
+
+  if (!host || !user || !pass) {
+    return { status: 'skipped', reason: 'SMTP_HOST is set but SMTP_USER or SMTP_PASSWORD is not' }
+  }
+
+  try {
+    const nodemailer = await import('nodemailer')
+    const port = Number(process.env.SMTP_PORT ?? 587)
+
+    const transport = nodemailer.createTransport({
+      host,
+      port,
+      // 465 is implicit TLS; 587 starts plain and upgrades with STARTTLS.
+      secure: port === 465,
+      auth: { user, pass },
+    })
+
+    const result = await transport.sendMail({
+      from,
+      to: input.to,
+      subject: input.subject,
+      text: input.text,
+      html: input.html,
+    })
+
+    return { status: 'sent', providerId: result.messageId }
+  } catch (error) {
+    return {
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'SMTP send failed',
+    }
+  }
 }

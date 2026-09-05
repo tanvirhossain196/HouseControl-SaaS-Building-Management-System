@@ -6,10 +6,14 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
   locale: 'en_US',
   contact: {
-    email: 'hello@housecontrol.app',
-    phone: '+880 1XXX-XXXXXX',
-    address: 'Gulshan-2, Dhaka 1212, Bangladesh',
+    email: 'mdtanvirhossain246@gmail.com',
+    phone: '+880 1616-122600',
+    whatsapp: '8801616122600',
+    address: 'Dhaka, Bangladesh',
   },
+  owner: 'Md Tanvir Hossain',
+  /** Not issued yet. Replace the asterisks when it is. */
+  tradeLicence: '**********',
   social: [
     { label: 'Facebook', href: 'https://facebook.com' },
     { label: 'LinkedIn', href: 'https://linkedin.com' },
@@ -20,7 +24,7 @@ export const site = {
 export const mainNav = [
   { label: 'Features', href: '/#features' },
   { label: 'How it works', href: '/#how-it-works' },
-  { label: 'Pricing', href: '/#pricing' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'FAQ', href: '/faq' },
   { label: 'About', href: '/about' },
 ] as const
@@ -31,7 +35,7 @@ export const footerNav = [
     links: [
       { label: 'Features', href: '/#features' },
       { label: 'How it works', href: '/#how-it-works' },
-      { label: 'Pricing', href: '/#pricing' },
+      { label: 'Pricing', href: '/pricing' },
       { label: 'FAQ', href: '/faq' },
     ],
   },
