@@ -10,11 +10,26 @@ export const bdPhone = z
 
 export const email = z.string().trim().toLowerCase().email('Use a valid email address.')
 
-export const money = z
+/**
+ * An amount in taka.
+ *
+ * Coerced, because every one of these arrives from an `<input>` and an input
+ * holds a string. `z.number()` rejected "37000" as the wrong type, which came
+ * out on screen as "Some fields need fixing" with nothing marked — the form
+ * was posting exactly what the user typed and being told it was invalid.
+ *
+ * Coercion turns "" into 0 rather than failing, which is what an empty rent
+ * field should mean. Anything non-numeric becomes NaN and is caught below.
+ */
+export const money = z.coerce
   .number({ invalid_type_error: 'Enter an amount.' })
-  .nonnegative('Amount cannot be negative.')
-  .max(100_000_000, 'That amount looks wrong.')
-  .multipleOf(0.01, 'Use at most two decimal places.')
+  .refine((value) => Number.isFinite(value), 'Enter an amount.')
+  .refine((value) => value >= 0, 'Amount cannot be negative.')
+  .refine((value) => value <= 100_000_000, 'That amount looks wrong.')
+  .refine(
+    (value) => Number.isInteger(Math.round(value * 100)),
+    'Use at most two decimal places.',
+  )
 
 export const isoDate = z
   .string()

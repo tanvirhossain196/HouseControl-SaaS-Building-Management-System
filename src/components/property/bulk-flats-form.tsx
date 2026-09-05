@@ -28,6 +28,7 @@ export function BulkFlatsForm({
   const [open, setOpen] = React.useState(false)
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [fields, setFields] = React.useState<Record<string, string[]>>({})
 
   const [plan, setPlan] = React.useState<BulkPlan>({
     fromFloor: 0,
@@ -51,6 +52,7 @@ export function BulkFlatsForm({
     if (pending) return
     setPending(true)
     setError(null)
+    setFields({})
 
     const result = await bulkCreateFlatsAction({
       buildingId,
@@ -64,6 +66,9 @@ export function BulkFlatsForm({
 
     if (!result.ok) {
       setError(result.error)
+      // Without this the banner said "some fields need fixing" and marked
+      // none of them, which is worse than saying nothing.
+      setFields(result.fieldErrors ?? {})
       return
     }
 
@@ -103,7 +108,12 @@ export function BulkFlatsForm({
           <FormError message={error} />
 
           <div className="grid gap-5 sm:grid-cols-3">
-            <Field label="From floor" htmlFor="fromFloor" hint="−1 for a basement">
+            <Field
+              label="From floor"
+              htmlFor="fromFloor"
+              error={fields.fromFloor?.[0]}
+              hint="−1 for a basement"
+            >
               <Input
                 id="fromFloor"
                 inputMode="numeric"
@@ -112,7 +122,7 @@ export function BulkFlatsForm({
                 className="tabular font-mono"
               />
             </Field>
-            <Field label="To floor" htmlFor="toFloor">
+            <Field label="To floor" htmlFor="toFloor" error={fields.toFloor?.[0]}>
               <Input
                 id="toFloor"
                 inputMode="numeric"
@@ -121,7 +131,7 @@ export function BulkFlatsForm({
                 className="tabular font-mono"
               />
             </Field>
-            <Field label="Units per floor" htmlFor="unitsPerFloor">
+            <Field label="Units per floor" htmlFor="unitsPerFloor" error={fields.unitsPerFloor?.[0]}>
               <Input
                 id="unitsPerFloor"
                 inputMode="numeric"
@@ -174,7 +184,12 @@ export function BulkFlatsForm({
             </Field>
           </div>
 
-          <Field label="Rent day" htmlFor="bulkDueDay" hint="1–28">
+          <Field
+            label="Rent day"
+            htmlFor="bulkDueDay"
+            error={fields.rentDueDay?.[0]}
+            hint="1–28"
+          >
             <Input
               id="bulkDueDay"
               inputMode="numeric"
