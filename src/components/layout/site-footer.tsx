@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Mail, MapPin, Phone, ShieldCheck } from 'lucide-react'
 import { footerNav, site } from '@/lib/site'
+import { getTranslations } from '@/lib/i18n'
 import { Logo } from './logo'
 
 /**
@@ -11,12 +12,14 @@ import { Logo } from './logo'
  * obvious placeholder.
  */
 export function SiteFooter() {
+  const { t } = getTranslations()
+
   return (
     <footer className="rule mt-26 bg-surface">
       <div className="container grid gap-12 py-14 md:grid-cols-[1.4fr_repeat(3,1fr)]">
         <div className="max-w-xs">
           <Logo />
-          <p className="mt-4 text-sm leading-relaxed text-muted">{site.tagline}</p>
+          <p className="mt-4 text-sm leading-relaxed text-muted">{t.footer.tagline}</p>
 
           <ul className="mt-5 space-y-2.5">
             <li>
@@ -43,7 +46,7 @@ export function SiteFooter() {
             </li>
             <li className="flex items-center gap-2 text-sm text-muted">
               <ShieldCheck className="size-4 shrink-0" aria-hidden />
-              Trade licence: {site.tradeLicence}
+              {t.footer.tradeLicence}: {site.tradeLicence}
             </li>
           </ul>
         </div>
@@ -70,28 +73,28 @@ export function SiteFooter() {
       <div className="rule">
         <div className="container flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted">
-            © {new Date().getFullYear()} {site.name}. Developed by{' '}
+            © {new Date().getFullYear()} {site.name}. {t.footer.developedBy}{' '}
             <span className="text-ink">{site.owner}</span>.
           </p>
           <ul className="flex flex-wrap gap-5">
             <li>
               <Link href="/privacy" className="text-xs text-muted hover:text-ink">
-                Privacy
+                {t.footer.privacy}
               </Link>
             </li>
             <li>
               <Link href="/terms" className="text-xs text-muted hover:text-ink">
-                Terms
+                {t.footer.terms}
               </Link>
             </li>
             <li>
               <Link href="/cookies" className="text-xs text-muted hover:text-ink">
-                Cookies
+                {t.footer.cookies}
               </Link>
             </li>
             <li>
               <Link href="/contact" className="text-xs text-muted hover:text-ink">
-                Support
+                {t.footer.support}
               </Link>
             </li>
           </ul>

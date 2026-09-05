@@ -85,7 +85,8 @@ export function AppSidebar({ role }: { role: RoleKey }) {
     .filter((section) => section.items.length > 0)
 
   const isCurrent = (item: NavItem) =>
-    pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`))
+    pathname === item.href ||
+    (item.href !== '/dashboard' && pathname.startsWith(`${item.href}/`))
 
   const tree = (
     <nav aria-label="Sections" className="space-y-6">
@@ -122,7 +123,9 @@ export function AppSidebar({ role }: { role: RoleKey }) {
                       <>
                         <span className="flex-1 truncate">{item.label}</span>
                         {item.soon && (
-                          <span className="text-[0.65rem] font-medium text-muted">soon</span>
+                          <span className="text-[0.65rem] font-medium text-muted">
+                            soon
+                          </span>
                         )}
                       </>
                     )}

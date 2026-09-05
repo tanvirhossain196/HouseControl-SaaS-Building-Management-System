@@ -1,16 +1,14 @@
 import { Check } from 'lucide-react'
 import { features, primaryFeature } from '@/content/features'
 import { Section } from './section'
+import { getTranslations } from '@/lib/i18n'
 
 export function Features() {
+  const { t } = getTranslations()
   const Primary = primaryFeature.icon
 
   return (
-    <Section
-      id="features"
-      heading="One building, six things to keep track of"
-      intro="Most owners run all of it on a register, a calculator and a WhatsApp group. HouseControl keeps the same work, minus the chasing."
-    >
+    <Section id="features" heading={t.features.heading} intro={t.features.intro}>
       <div className="grid gap-4 lg:grid-cols-3">
         <article className="rounded-sheet border border-line bg-surface p-7 lg:col-span-2 lg:p-9">
           <Primary className="size-5 text-primary" aria-hidden />

@@ -48,7 +48,12 @@ export function ProfileForm({
       <FormError message={error} />
 
       <Field label="Your name" htmlFor="fullName" error={fields.fullName?.[0]} required>
-        <Input id="fullName" name="fullName" defaultValue={fullName} autoComplete="name" />
+        <Input
+          id="fullName"
+          name="fullName"
+          defaultValue={fullName}
+          autoComplete="name"
+        />
       </Field>
 
       <Field

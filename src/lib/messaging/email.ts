@@ -162,7 +162,10 @@ async function sendOverSmtp(input: {
   const from = process.env.EMAIL_FROM ?? user ?? `${site.name} <no-reply@example.com>`
 
   if (!host || !user || !pass) {
-    return { status: 'skipped', reason: 'SMTP_HOST is set but SMTP_USER or SMTP_PASSWORD is not' }
+    return {
+      status: 'skipped',
+      reason: 'SMTP_HOST is set but SMTP_USER or SMTP_PASSWORD is not',
+    }
   }
 
   try {

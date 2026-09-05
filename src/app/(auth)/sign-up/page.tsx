@@ -2,6 +2,7 @@ import { pageMetadata } from '@/lib/seo'
 import { AuthCard, AuthLink } from '@/components/auth/auth-card'
 import { GoogleButton } from '@/components/auth/google-button'
 import { SignUpForm } from '@/components/auth/sign-up-form'
+import { getTranslations } from '@/lib/i18n'
 
 export const metadata = pageMetadata({
   title: 'Create an account',
@@ -12,13 +13,15 @@ export const metadata = pageMetadata({
 })
 
 export default function SignUpPage() {
+  const { t } = getTranslations()
+
   return (
     <AuthCard
-      title="Create your account"
-      description="Free for one building up to 12 units. No card needed."
+      title={t.auth.signUpTitle}
+      description={t.auth.signUpSubtitle}
       footer={
         <p>
-          Already have an account? <AuthLink href="/sign-in">Sign in</AuthLink>
+          {t.auth.haveAccount} <AuthLink href="/sign-in">{t.auth.signInTitle}</AuthLink>
         </p>
       }
     >
@@ -26,7 +29,7 @@ export default function SignUpPage() {
         <GoogleButton next="/onboarding/phone" />
         <div className="flex items-center gap-3">
           <span className="h-px flex-1 bg-line" />
-          <span className="text-xs text-muted">or use email</span>
+          <span className="text-xs text-muted">{t.auth.orUseEmail}</span>
           <span className="h-px flex-1 bg-line" />
         </div>
         <SignUpForm />

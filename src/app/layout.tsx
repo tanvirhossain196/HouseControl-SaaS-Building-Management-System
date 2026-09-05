@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { site } from '@/lib/site'
+import { getLocale } from '@/lib/i18n'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { ToastProvider } from '@/components/providers/toast-provider'
 import './globals.css'
@@ -52,8 +53,13 @@ const organizationSchema = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  // `lang` drives screen-reader pronunciation and the browser's own offer to
+  // translate the page. Getting it wrong makes a Bangla page read aloud as
+  // mispronounced English.
+  const locale = getLocale()
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -35,7 +35,11 @@ check('every paid tier says what it does not include', () => {
   // A plan page that only lists what you get makes people guess at the rest.
   assert.ok(PLANS.find((plan) => plan.id === 'free')!.missing.length > 0)
   assert.ok(PLANS.find((plan) => plan.id === 'plus')!.missing.length > 0)
-  assert.equal(PLANS.find((plan) => plan.id === 'pro')!.missing.length, 0, 'Pro has everything')
+  assert.equal(
+    PLANS.find((plan) => plan.id === 'pro')!.missing.length,
+    0,
+    'Pro has everything',
+  )
 })
 
 check('every tier is written in both languages', () => {
@@ -108,7 +112,10 @@ check('totals and savings always reconcile', () => {
 check('no discount goes past a fifth', () => {
   // Beyond that the monthly price stops looking real.
   for (const period of PERIODS) {
-    assert.ok(period.discount <= 20, `${period.months} months discounts ${period.discount}%`)
+    assert.ok(
+      period.discount <= 20,
+      `${period.months} months discounts ${period.discount}%`,
+    )
   }
 })
 

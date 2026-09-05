@@ -41,16 +41,17 @@ export default async function BillingPage() {
 
   const supabase = createServerSupabase()
 
-  const [{ data: subscription }, { data: organisation }, { data: buildings }] = await Promise.all([
-    supabase
-      .from('subscriptions')
-      .select('plan, status, unit_limit, building_limit, current_period_end')
-      .eq('org_id', orgId)
-      .neq('status', 'cancelled')
-      .maybeSingle(),
-    supabase.from('organizations').select('name').eq('id', orgId).maybeSingle(),
-    supabase.from('buildings').select('id').eq('org_id', orgId).is('archived_at', null),
-  ])
+  const [{ data: subscription }, { data: organisation }, { data: buildings }] =
+    await Promise.all([
+      supabase
+        .from('subscriptions')
+        .select('plan, status, unit_limit, building_limit, current_period_end')
+        .eq('org_id', orgId)
+        .neq('status', 'cancelled')
+        .maybeSingle(),
+      supabase.from('organizations').select('name').eq('id', orgId).maybeSingle(),
+      supabase.from('buildings').select('id').eq('org_id', orgId).is('archived_at', null),
+    ])
 
   const planId = (subscription?.plan ?? 'free') as PlanId
   const plan = planById(planId)
@@ -114,8 +115,8 @@ export default async function BillingPage() {
           </div>
           {nearLimit && (
             <p className="mt-2 text-xs text-due">
-              Close to the limit. Adding units past it asks you to upgrade — nothing already
-              here stops working.
+              Close to the limit. Adding units past it asks you to upgrade — nothing
+              already here stops working.
             </p>
           )}
         </div>
@@ -124,8 +125,8 @@ export default async function BillingPage() {
       <section className="mt-10">
         <h2 className="text-title text-ink">Change your plan</h2>
         <p className="mt-1 max-w-[62ch] text-sm text-muted">
-          Payment is arranged over WhatsApp for now. Pick a plan and a period, and the message
-          arrives with your organization and the exact figure already filled in.
+          Payment is arranged over WhatsApp for now. Pick a plan and a period, and the
+          message arrives with your organization and the exact figure already filled in.
         </p>
         <div className="mt-6">
           <PlanTable
@@ -152,7 +153,8 @@ export default async function BillingPage() {
             <span>
               <span className="block font-medium text-ink">WhatsApp</span>
               <span className="block text-sm text-muted">
-                Billing, upgrades and payment details. Replies within the hour on a working day.
+                Billing, upgrades and payment details. Replies within the hour on a
+                working day.
               </span>
             </span>
           </a>
@@ -163,7 +165,9 @@ export default async function BillingPage() {
           >
             <Phone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
             <span>
-              <span className="block font-medium text-ink">Call {SUPPORT_PHONE_DISPLAY}</span>
+              <span className="block font-medium text-ink">
+                Call {SUPPORT_PHONE_DISPLAY}
+              </span>
               <span className="block text-sm text-muted">
                 For anything urgent — a building that has to be running today.
               </span>
@@ -173,8 +177,9 @@ export default async function BillingPage() {
 
         <p className="mt-6 flex items-start gap-2 text-xs leading-relaxed text-muted">
           <CreditCard className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          Card and bKash payment inside the app is built and waiting on gateway credentials. Once
-          those are in place this page pays directly and the WhatsApp step disappears.
+          Card and bKash payment inside the app is built and waiting on gateway
+          credentials. Once those are in place this page pays directly and the WhatsApp
+          step disappears.
         </p>
       </section>
     </>

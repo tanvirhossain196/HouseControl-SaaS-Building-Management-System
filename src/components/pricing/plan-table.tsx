@@ -123,7 +123,10 @@ export function PlanTable({
                   </li>
                 ))}
                 {plan.missing.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm text-muted">
+                  <li
+                    key={feature}
+                    className="flex items-start gap-2.5 text-sm text-muted"
+                  >
                     <Minus className="mt-0.5 size-4 shrink-0 text-line" aria-hidden />
                     {feature}
                   </li>
@@ -133,7 +136,10 @@ export function PlanTable({
               {plan.monthly === 0 ? (
                 <a
                   href="/sign-up"
-                  className={cn(buttonVariants({ variant: 'outline', block: true }), 'mt-7')}
+                  className={cn(
+                    buttonVariants({ variant: 'outline', block: true }),
+                    'mt-7',
+                  )}
                 >
                   Start free
                 </a>
@@ -168,8 +174,8 @@ export function PlanTable({
 
       <div className="mt-6 rounded-panel border border-line bg-surface p-5">
         <p className="text-sm text-ink">
-          Payment is arranged over WhatsApp — bKash, Nagad, bank transfer or card. Send the
-          message and the details come back within the hour on a working day.
+          Payment is arranged over WhatsApp — bKash, Nagad, bank transfer or card. Send
+          the message and the details come back within the hour on a working day.
         </p>
         <p className="mt-2 text-sm text-muted">
           Something urgent, or a building that has to be running today? Call{' '}

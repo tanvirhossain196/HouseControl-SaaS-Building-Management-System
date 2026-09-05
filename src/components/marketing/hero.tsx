@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { buttonVariants } from '@/components/ui/button'
+import { getTranslations } from '@/lib/i18n'
 import { BuildingPanel } from './building-panel'
 
 export function Hero() {
+  const { t } = getTranslations()
+
   return (
     <section className="relative overflow-hidden">
       <div
@@ -11,28 +14,20 @@ export function Hero() {
       />
       <div className="container relative grid gap-14 py-16 md:py-24 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:items-center lg:gap-16">
         <div className="max-w-xl">
-          <h1 className="text-display-lg text-ink">
-            Every flat, every taka, every visitor at the gate.
-          </h1>
-          <p className="mt-6 max-w-[56ch] text-lead text-muted">
-            HouseControl is the panel your building runs on. Rent and dues, shared bills,
-            repairs and the gate register live in one place, with a separate view for the
-            owner, each flat moderator, every resident and the guard.
-          </p>
+          <h1 className="text-display-lg text-ink">{t.hero.title}</h1>
+          <p className="mt-6 max-w-[56ch] text-lead text-muted">{t.hero.body}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link href="/sign-up" className={buttonVariants({ size: 'lg' })}>
-              Set up your building
+              {t.hero.primary}
             </Link>
             <Link
               href="/#how-it-works"
               className={buttonVariants({ variant: 'outline', size: 'lg' })}
             >
-              See how it works
+              {t.hero.secondary}
             </Link>
           </div>
-          <p className="mt-5 text-sm text-muted">
-            Free for one building up to 12 units. No card needed to start.
-          </p>
+          <p className="mt-5 text-sm text-muted">{t.hero.note}</p>
         </div>
 
         <div className="lg:pl-4">

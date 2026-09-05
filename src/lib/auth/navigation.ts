@@ -46,8 +46,20 @@ export const navigation: NavSection[] = [
   {
     heading: 'Building',
     items: [
-      { label: 'Buildings', labelBn: 'বিল্ডিং', href: '/admin', permission: 'building.edit', icon: 'building' },
-      { label: 'Flats', labelBn: 'ফ্ল্যাট', href: '/admin/flats', permission: 'flat.edit', icon: 'grid' },
+      {
+        label: 'Buildings',
+        labelBn: 'বিল্ডিং',
+        href: '/admin',
+        permission: 'building.edit',
+        icon: 'building',
+      },
+      {
+        label: 'Flats',
+        labelBn: 'ফ্ল্যাট',
+        href: '/admin/flats',
+        permission: 'flat.edit',
+        icon: 'grid',
+      },
       {
         label: 'Residents',
         labelBn: 'ভাড়াটিয়া',
@@ -67,16 +79,47 @@ export const navigation: NavSection[] = [
   {
     heading: 'Money',
     items: [
-      { label: 'Dues', labelBn: 'বকেয়া', href: '/dues', permission: 'report.self.view', icon: 'receipt' },
-      { label: 'Payments', labelBn: 'পেমেন্ট', href: '/payments', permission: 'payment.review', icon: 'wallet' },
-      { label: 'Expenses', labelBn: 'খরচ', href: '/expenses', permission: 'expense.manage', soon: true, icon: 'coins' },
-      { label: 'Reports', labelBn: 'রিপোর্ট', href: '/reports', permission: 'report.flat.view', icon: 'chart' },
+      {
+        label: 'Dues',
+        labelBn: 'বকেয়া',
+        href: '/dues',
+        permission: 'report.self.view',
+        icon: 'receipt',
+      },
+      {
+        label: 'Payments',
+        labelBn: 'পেমেন্ট',
+        href: '/payments',
+        permission: 'payment.review',
+        icon: 'wallet',
+      },
+      {
+        label: 'Expenses',
+        labelBn: 'খরচ',
+        href: '/expenses',
+        permission: 'expense.manage',
+        soon: true,
+        icon: 'coins',
+      },
+      {
+        label: 'Reports',
+        labelBn: 'রিপোর্ট',
+        href: '/reports',
+        permission: 'report.flat.view',
+        icon: 'chart',
+      },
     ],
   },
   {
     heading: 'Operations',
     items: [
-      { label: 'Gate', labelBn: 'গেট', href: '/gate', permission: 'visitor.log', icon: 'door' },
+      {
+        label: 'Gate',
+        labelBn: 'গেট',
+        href: '/gate',
+        permission: 'visitor.log',
+        icon: 'door',
+      },
       {
         label: 'Visitors',
         labelBn: 'ভিজিটর',
@@ -103,7 +146,12 @@ export const navigation: NavSection[] = [
         permission: 'org.billing.manage',
         icon: 'card',
       },
-      { label: 'Your profile', labelBn: 'প্রোফাইল', href: '/settings/profile', icon: 'user' },
+      {
+        label: 'Your profile',
+        labelBn: 'প্রোফাইল',
+        href: '/settings/profile',
+        icon: 'user',
+      },
       {
         label: 'Notifications',
         labelBn: 'নোটিফিকেশন',

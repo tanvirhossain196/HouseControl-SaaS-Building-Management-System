@@ -151,7 +151,8 @@ supabase/
   seed.sql             sample building and ledger
 docs/                  ARCHITECTURE.md, DATABASE.md, AUTH.md, PERMISSIONS.md,
                        PAYMENTS.md, HANDOVER.md, GATE.md, MAINTENANCE.md,
-                       NOTIFICATIONS.md, REPORTS.md, SEARCH.md, PERFORMANCE.md
+                       NOTIFICATIONS.md, REPORTS.md, SEARCH.md, PERFORMANCE.md,
+                       I18N.md
 tests/                 permission, unit-numbering and rent-split checks (no database)
 ```
 

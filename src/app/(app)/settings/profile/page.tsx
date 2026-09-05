@@ -30,7 +30,9 @@ export default async function ProfilePage() {
       <div className="flex items-center gap-4 rounded-panel border border-line bg-surface p-5">
         <Avatar name={session.profile?.full_name ?? session.email} size="lg" />
         <div className="min-w-0">
-          <p className="font-medium text-ink">{session.profile?.full_name ?? 'No name set'}</p>
+          <p className="font-medium text-ink">
+            {session.profile?.full_name ?? 'No name set'}
+          </p>
           <p className="truncate text-sm text-muted">{session.email}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge tone="primary">{roleLabels[role]}</Badge>

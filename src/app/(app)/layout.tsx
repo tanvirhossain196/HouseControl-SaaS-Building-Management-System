@@ -5,6 +5,8 @@ import { PermissionProvider } from '@/components/providers/permission-provider'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { Logo } from '@/components/layout/logo'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
+import { LocaleToggle } from '@/components/layout/locale-toggle'
+import { getLocale } from '@/lib/i18n'
 import { GlobalSearch } from '@/components/search/global-search'
 import { NotificationBell } from '@/components/notifications/notification-bell'
 import { listNotifications, unreadCount } from '@/services/notifications.service'
@@ -21,6 +23,7 @@ import { roleLabels } from '@/lib/auth/permissions'
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession()
   const role = sessionRole(session)
+  const locale = getLocale()
 
   const [notifications, unread] = await Promise.all([
     listNotifications(15).catch(() => []),
@@ -35,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Logo href="/dashboard" />
             <div className="flex items-center gap-3">
               <NotificationBell notifications={notifications} unread={unread} />
+              <LocaleToggle current={locale} />
               <ThemeToggle />
               <ProfileMenu
                 name={session.profile?.full_name ?? session.email}

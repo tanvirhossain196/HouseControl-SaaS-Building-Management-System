@@ -57,7 +57,8 @@ async function uniqueSlug(name: string): Promise<string> {
       .slice(0, 40) || 'building'
 
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const slug = attempt === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`
+    const slug =
+      attempt === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 6)}`
 
     const { data } = await admin
       .from('organizations')

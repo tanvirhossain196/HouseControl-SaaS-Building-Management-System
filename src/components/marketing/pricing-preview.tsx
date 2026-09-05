@@ -17,7 +17,10 @@ export function PricingPreview() {
       <PlanTable />
 
       <p className="mt-6 text-sm text-muted">
-        <Link href="/pricing" className="inline-flex items-center gap-1.5 text-primary hover:underline">
+        <Link
+          href="/pricing"
+          className="inline-flex items-center gap-1.5 text-primary hover:underline"
+        >
           What each plan is for
           <ArrowRight className="size-3.5" aria-hidden />
         </Link>

@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 import { mainNav } from '@/lib/site'
+import { LocaleToggle } from './locale-toggle'
+import type { Dictionary, Locale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Logo } from './logo'
@@ -39,7 +41,15 @@ function useActiveSection(enabled: boolean) {
   return active
 }
 
-export function SiteHeader() {
+const NAV_KEYS: Record<string, keyof Dictionary['nav']> = {
+  '/#features': 'features',
+  '/#how-it-works': 'howItWorks',
+  '/pricing': 'pricing',
+  '/faq': 'faq',
+  '/about': 'about',
+}
+
+export function SiteHeader({ t, locale }: { t: Dictionary; locale: Locale }) {
   const pathname = usePathname()
   const isHome = pathname === '/'
   const activeSection = useActiveSection(isHome)
@@ -100,7 +110,7 @@ export function SiteHeader() {
                     isCurrent(item.href) ? 'text-ink' : 'text-muted hover:text-ink',
                   )}
                 >
-                  {item.label}
+                  {t.nav[NAV_KEYS[item.href] ?? 'features'] ?? item.label}
                   {isCurrent(item.href) && (
                     <span
                       aria-hidden
@@ -114,16 +124,18 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <LocaleToggle current={locale} />
           <ThemeToggle />
           <Link href="/sign-in" className="text-sm font-medium text-muted hover:text-ink">
-            Sign in
+            {t.common.signIn}
           </Link>
           <Link href="/sign-up" className={buttonVariants({ size: 'sm' })}>
-            Get started
+            {t.common.signUp}
           </Link>
         </div>
 
         <div className="flex items-center gap-1 md:hidden">
+          <LocaleToggle current={locale} />
           <ThemeToggle />
           <Button
             variant="quiet"
@@ -151,7 +163,7 @@ export function SiteHeader() {
                   href={item.href}
                   className="flex min-h-12 items-center rounded-control px-2 text-[0.95rem] font-medium text-ink hover:bg-raised"
                 >
-                  {item.label}
+                  {t.nav[NAV_KEYS[item.href] ?? 'features'] ?? item.label}
                 </Link>
               </li>
             ))}
@@ -161,13 +173,13 @@ export function SiteHeader() {
               href="/sign-in"
               className="flex min-h-12 items-center rounded-control px-2 text-[0.95rem] font-medium text-muted hover:bg-raised"
             >
-              Sign in
+              {t.common.signIn}
             </Link>
             <Link
               href="/sign-up"
               className="flex min-h-12 items-center justify-center rounded-control bg-primary px-4 text-sm font-medium text-primary-fg"
             >
-              Get started
+              {t.common.signUp}
             </Link>
           </div>
         </nav>

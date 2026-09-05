@@ -159,8 +159,8 @@ export function ForgotPasswordForm() {
       </div>
 
       <p className="text-xs leading-relaxed text-muted">
-        The email also contains a link. Either one works — whichever is easier on the device you
-        are reading it on.
+        The email also contains a link. Either one works — whichever is easier on the
+        device you are reading it on.
       </p>
     </form>
   )

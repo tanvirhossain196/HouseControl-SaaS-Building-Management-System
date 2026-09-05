@@ -46,7 +46,10 @@ export function SetupForm() {
     event.preventDefault()
     if (pending) return
 
-    const data = Object.fromEntries(new FormData(event.currentTarget)) as Record<string, string>
+    const data = Object.fromEntries(new FormData(event.currentTarget)) as Record<
+      string,
+      string
+    >
     setPending(true)
     setError(null)
     setFields({})
@@ -177,7 +180,11 @@ export function SetupForm() {
                 />
               </Field>
 
-              <Field label="Rent for each" htmlFor="monthlyRent" hint="Edit individually later.">
+              <Field
+                label="Rent for each"
+                htmlFor="monthlyRent"
+                hint="Edit individually later."
+              >
                 <Input
                   id="monthlyRent"
                   name="monthlyRent"
@@ -223,8 +230,8 @@ export function SetupForm() {
 
               {overFreeLimit && (
                 <p className="mt-2 text-xs leading-relaxed text-muted">
-                  The Free plan covers 12 units, so the first 12 are created now. Upgrade to Pro
-                  and generate the rest from the building page — nothing is lost.
+                  The Free plan covers 12 units, so the first 12 are created now. Upgrade
+                  to Pro and generate the rest from the building page — nothing is lost.
                 </p>
               )}
             </div>

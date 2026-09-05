@@ -1,20 +1,25 @@
 import Link from 'next/link'
 import { Logo } from '@/components/layout/logo'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
+import { LocaleToggle } from '@/components/layout/locale-toggle'
+import { getTranslations } from '@/lib/i18n'
 
 /**
  * Auth pages get no marketing nav. One column, one task, one way out —
  * the person is here to sign in, not to browse.
  */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  const { locale, t } = getTranslations()
+
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="container flex h-16 items-center justify-between">
         <Logo />
         <div className="flex items-center gap-3">
+          <LocaleToggle current={locale} />
           <ThemeToggle />
           <Link href="/" className="text-sm text-muted transition-colors hover:text-ink">
-            Back to site
+            {t.common.backToSite}
           </Link>
         </div>
       </header>

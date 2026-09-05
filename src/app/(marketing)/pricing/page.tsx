@@ -56,25 +56,25 @@ export default function PricingPage() {
           <div>
             <h3 className="font-semibold text-ink">Free</h3>
             <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-muted">
-              One building you own and live near. Rent is collected by bKash and confirmed by
-              you, the guard writes in a book, and what you want is the arguing to stop. This
-              covers all of that.
+              One building you own and live near. Rent is collected by bKash and confirmed
+              by you, the guard writes in a book, and what you want is the arguing to
+              stop. This covers all of that.
             </p>
           </div>
           <div>
             <h3 className="font-semibold text-ink">Plus</h3>
             <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-muted">
-              The same building, but you would rather the rent arrived on its own. Residents pay
-              online, receipts issue themselves, and the overdue list becomes a text message
-              rather than a phone call.
+              The same building, but you would rather the rent arrived on its own.
+              Residents pay online, receipts issue themselves, and the overdue list
+              becomes a text message rather than a phone call.
             </p>
           </div>
           <div>
             <h3 className="font-semibold text-ink">Pro</h3>
             <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-muted">
-              More than one building, and other people running them for you. The audit log and
-              the landlord rent records are what this tier is really for — knowing who changed
-              what while you were not looking.
+              More than one building, and other people running them for you. The audit log
+              and the landlord rent records are what this tier is really for — knowing who
+              changed what while you were not looking.
             </p>
           </div>
         </div>
