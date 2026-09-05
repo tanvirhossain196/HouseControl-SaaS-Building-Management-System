@@ -15,10 +15,13 @@ export const site = {
   /** Not issued yet. Replace the asterisks when it is. */
   tradeLicence: '**********',
   social: [
-    { label: 'Facebook', href: 'https://facebook.com' },
-    { label: 'LinkedIn', href: 'https://linkedin.com' },
-    { label: 'GitHub', href: 'https://github.com' },
+    { label: 'Facebook', href: 'https://www.facebook.com/md.tanvirhossain1715' },
+    { label: 'Instagram', href: 'https://www.instagram.com/_tanvir._hossain_' },
+    { label: 'LinkedIn', href: 'https://www.linkedin.com/in/mdtanvirhossain196' },
+    { label: 'YouTube', href: 'https://www.youtube.com' },
   ],
+  /** Where the developer credit in the footer points. */
+  ownerProfile: 'https://www.facebook.com/md.tanvirhossain1715',
 } as const
 
 export const mainNav = [

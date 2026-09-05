@@ -7,6 +7,9 @@ import { cn } from '@/lib/utils'
 /**
  * The wordmark.
  *
+ * Rendered at 40px in a 72px header, with the source requested at twice
+ * that so it stays sharp on a retina screen.
+ *
  * Drop a file at `public/assets/logo/house-control.jpg` and it is used
  * automatically; without one, the built-in mark is drawn instead. The
  * fallback runs on the image's own `onError`, so a missing file degrades to
@@ -37,15 +40,15 @@ export function Logo({
         <img
           src={LOGO_SRC}
           alt=""
-          width={32}
-          height={32}
-          className="size-8 rounded-tile object-cover"
+          width={80}
+          height={80}
+          className="size-10 rounded-control object-cover"
           onError={() => setHasImage(false)}
         />
       ) : (
         <span
           aria-hidden
-          className="grid size-8 grid-cols-2 grid-rows-3 gap-[2px] rounded-tile bg-primary p-[5px]"
+          className="grid size-10 grid-cols-2 grid-rows-3 gap-[2px] rounded-control bg-primary p-1.5"
         >
           <span className="rounded-[1px] bg-primary-fg/35" />
           <span className="rounded-[1px] bg-primary-fg/35" />
@@ -57,7 +60,7 @@ export function Logo({
       )}
 
       {showWordmark && (
-        <span className="text-[1.0625rem] font-semibold tracking-[-0.02em] text-ink">
+        <span className="text-[1.15rem] font-semibold tracking-[-0.02em] text-ink">
           House<span className="text-muted">Control</span>
         </span>
       )}

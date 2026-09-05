@@ -191,7 +191,7 @@ async function assertBuildingQuotaAvailable(orgId: string) {
   if ((count ?? 0) >= subscription.building_limit) {
     throw new AppError(
       'plan_limit_reached',
-      `The Free plan covers ${subscription.building_limit} building. Upgrade to Pro to add more.`,
+      `Your plan covers ${subscription.building_limit} building. Upgrade on Plan & billing to add more.`,
     )
   }
 }

@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import { Building2 } from 'lucide-react'
 import { setUpBuildingAction } from './actions'
 import { planUnits } from '@/lib/units'
+import { useNumberField } from '@/hooks/use-number-field'
+import { limitsFor } from '@/lib/pricing'
+
+const FREE_UNITS = limitsFor('free').units
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/input'
 import { FormError } from '@/components/auth/form-error'
@@ -25,9 +29,12 @@ export function SetupForm() {
   const [error, setError] = React.useState<string | null>(null)
   const [fields, setFields] = React.useState<Record<string, string[]>>({})
 
-  const [floors, setFloors] = React.useState(6)
-  const [perFloor, setPerFloor] = React.useState(2)
+  const floorsField = useNumberField(6, 1)
+  const perFloorField = useNumberField(2, 1)
   const [generate, setGenerate] = React.useState(true)
+
+  const floors = floorsField.value
+  const perFloor = perFloorField.value
 
   const preview = React.useMemo(() => {
     if (!generate) return []
@@ -40,7 +47,7 @@ export function SetupForm() {
     })
   }, [floors, perFloor, generate])
 
-  const overFreeLimit = preview.length > 12
+  const overFreeLimit = preview.length > FREE_UNITS
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -120,9 +127,7 @@ export function SetupForm() {
             <Input
               id="floorsCount"
               name="floorsCount"
-              inputMode="numeric"
-              value={floors}
-              onChange={(event) => setFloors(Number(event.target.value) || 0)}
+              {...floorsField.props}
               className="tabular font-mono"
             />
           </Field>
@@ -173,9 +178,7 @@ export function SetupForm() {
                 <Input
                   id="unitsPerFloor"
                   name="unitsPerFloor"
-                  inputMode="numeric"
-                  value={perFloor}
-                  onChange={(event) => setPerFloor(Number(event.target.value) || 0)}
+                  {...perFloorField.props}
                   className="tabular font-mono"
                 />
               </Field>
@@ -212,7 +215,7 @@ export function SetupForm() {
               </p>
               <div className="mt-2 max-h-32 overflow-y-auto rounded-control border border-line bg-raised/50 p-3">
                 <div className="flex flex-wrap gap-1.5">
-                  {preview.slice(0, 12).map((unit) => (
+                  {preview.slice(0, FREE_UNITS).map((unit) => (
                     <span
                       key={unit.unitNumber}
                       className="tabular rounded-tile border border-line bg-surface px-2 py-1 font-mono text-xs text-ink"
@@ -222,7 +225,7 @@ export function SetupForm() {
                   ))}
                   {overFreeLimit && (
                     <span className="rounded-tile bg-due-soft px-2 py-1 text-xs text-due">
-                      +{preview.length - 12} beyond the Free plan
+                      +{preview.length - FREE_UNITS} beyond the Free plan
                     </span>
                   )}
                 </div>

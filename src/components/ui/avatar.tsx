@@ -4,6 +4,7 @@ const sizes = {
   sm: 'size-7 text-[0.65rem]',
   md: 'size-9 text-xs',
   lg: 'size-12 text-sm',
+  xl: 'size-24 text-xl',
 } as const
 
 function initials(name: string) {

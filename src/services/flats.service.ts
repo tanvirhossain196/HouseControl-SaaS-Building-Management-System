@@ -307,7 +307,7 @@ async function assertUnitQuota(buildingId: string, adding: number) {
   if (used + adding > subscription.unit_limit) {
     throw new AppError(
       'plan_limit_reached',
-      `The Free plan covers ${subscription.unit_limit} units and you have ${used}. Upgrade to Pro to add ${adding} more.`,
+      `Your plan covers ${subscription.unit_limit} unit${subscription.unit_limit === 1 ? '' : 's'} and you have ${used}. Upgrade on Plan & billing to add ${adding} more — nothing you already have stops working.`,
     )
   }
 }

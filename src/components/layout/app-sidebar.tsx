@@ -213,7 +213,7 @@ export function AppSidebar({ role }: { role: RoleKey }) {
         Desktop: always open, and sticky with its own scrollbar so the
         navigation stays put while a long table scrolls beside it.
       */}
-      <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-56 shrink-0 overflow-y-auto border-r border-line px-3 py-6 lg:block xl:w-64">
+      <aside className="sticky top-[4.5rem] hidden h-[calc(100dvh-4.5rem)] w-56 shrink-0 overflow-y-auto border-r border-line px-3 py-6 lg:block xl:w-64">
         <div className="px-3 pb-5">
           <Badge tone="primary">{roleLabels[role]}</Badge>
         </div>

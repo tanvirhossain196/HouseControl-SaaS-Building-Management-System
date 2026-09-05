@@ -34,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <PermissionProvider value={{ ...permissionContext(session), role }}>
       <div className="flex min-h-dvh flex-col">
         <header className="sticky top-0 z-50 border-b border-line bg-paper/85 backdrop-blur-md">
-          <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-5">
+          <div className="mx-auto flex h-[4.5rem] max-w-[1600px] items-center justify-between gap-4 px-5">
             <Logo href="/dashboard" />
             <div className="flex items-center gap-3">
               <NotificationBell notifications={notifications} unread={unread} />
@@ -45,6 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 email={session.email}
                 role={roleLabels[role]}
                 phoneVerified={session.isPhoneVerified}
+                avatarUrl={session.profile?.avatar_url}
               />
             </div>
           </div>

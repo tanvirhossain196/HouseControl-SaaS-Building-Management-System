@@ -59,3 +59,39 @@ export async function updateProfileAction(input: unknown): Promise<ActionResult<
     return { ok: false, error: toAppError(error).message }
   }
 }
+
+/**
+ * Stores the URL of a photo already uploaded to Storage, or clears it.
+ *
+ * The upload itself happens in the browser: sending a 2MB image through a
+ * server action would base64-encode it into the request body, a third larger
+ * than the file. Passing `null` removes the photo without touching the object
+ * in the bucket — an orphaned file costs a few kilobytes, and deleting the
+ * wrong one costs somebody their photo.
+ */
+export async function saveAvatarAction(url: string | null): Promise<ActionResult<null>> {
+  const parsed =
+    url === null
+      ? { success: true as const, data: null }
+      : z.string().url().safeParse(url)
+
+  if (!parsed.success)
+    return { ok: false, error: 'That does not look like an image address.' }
+
+  try {
+    const session = await requireSession()
+    const supabase = createServerSupabase()
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_url: url })
+      .eq('id', session.userId)
+
+    if (error) throw error
+
+    revalidatePath('/', 'layout')
+    return { ok: true, data: null }
+  } catch (error) {
+    return { ok: false, error: toAppError(error).message }
+  }
+}

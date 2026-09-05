@@ -4,6 +4,10 @@ import { createAdminSupabase } from '@/lib/supabase/admin'
 import { AppError, conflict, toAppError } from '@/lib/errors'
 import { writeAuditLog } from './audit.service'
 import { planUnits, type BulkPlan } from '@/lib/units'
+import { limitsFor } from '@/lib/pricing'
+
+/** Taken from the plan table, so the page and the database cannot disagree. */
+const FREE_UNIT_LIMIT = limitsFor('free').units
 
 /**
  * Setting up a building for the first time.
@@ -114,7 +118,7 @@ export async function setUpFirstBuilding(
     const { error: planError } = await admin.from('subscriptions').insert({
       org_id: org.id,
       plan: 'free',
-      unit_limit: 12,
+      unit_limit: FREE_UNIT_LIMIT,
       building_limit: 1,
     })
     if (planError) throw planError
@@ -153,10 +157,10 @@ export async function setUpFirstBuilding(
         unitStyle: input.units.unitStyle,
       })
 
-      // The Free plan covers twelve units. Generating more here would create
-      // a building the owner cannot use, so it stops at the limit and says so
-      // on the next screen instead of failing the whole setup.
-      const allowed = planned.slice(0, 12)
+      // Generating past the plan limit would create a building the owner
+      // cannot use, so it stops at the limit and says so on the next screen
+      // rather than failing the whole setup.
+      const allowed = planned.slice(0, FREE_UNIT_LIMIT)
 
       if (allowed.length > 0) {
         const { error: flatError } = await admin.from('flats').insert(

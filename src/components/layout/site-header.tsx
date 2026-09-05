@@ -95,7 +95,7 @@ export function SiteHeader({ t, locale }: { t: Dictionary; locale: Locale }) {
         Skip to content
       </a>
 
-      <div className="container flex h-16 items-center justify-between gap-6">
+      <div className="container flex h-[4.5rem] items-center justify-between gap-6">
         <Logo />
 
         <nav aria-label="Main" className="hidden md:block">

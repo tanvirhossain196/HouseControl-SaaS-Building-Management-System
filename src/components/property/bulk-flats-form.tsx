@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { bulkCreateFlatsAction } from '@/app/(app)/admin/actions'
 import { planUnits, type BulkPlan } from '@/lib/units'
+import { useNumberField } from '@/hooks/use-number-field'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/input'
@@ -30,13 +31,35 @@ export function BulkFlatsForm({
   const [error, setError] = React.useState<string | null>(null)
   const [fields, setFields] = React.useState<Record<string, string[]>>({})
 
-  const [plan, setPlan] = React.useState<BulkPlan>({
-    fromFloor: 0,
-    toFloor: Math.max(1, floorsCount - 1),
-    unitsPerFloor: 2,
-    floorStyle: 'ground_g',
-    unitStyle: 'floor_letter',
+  // Floors and counts keep their raw text so a half-typed "-1" survives.
+  const fromField = useNumberField(0, 0)
+  const toField = useNumberField(Math.max(1, floorsCount - 1), 0)
+  const perFloorField = useNumberField(2, 1)
+
+  const [styles, setStyles] = React.useState({
+    floorStyle: 'ground_g' as BulkPlan['floorStyle'],
+    unitStyle: 'floor_letter' as BulkPlan['unitStyle'],
   })
+
+  // Memoised because the preview below depends on it: a fresh object every
+  // render would recompute the unit list on every keystroke elsewhere in the
+  // form.
+  const plan: BulkPlan = React.useMemo(
+    () => ({
+      fromFloor: fromField.value,
+      toFloor: toField.value,
+      unitsPerFloor: perFloorField.value,
+      floorStyle: styles.floorStyle,
+      unitStyle: styles.unitStyle,
+    }),
+    [
+      fromField.value,
+      toField.value,
+      perFloorField.value,
+      styles.floorStyle,
+      styles.unitStyle,
+    ],
+  )
   const [monthlyRent, setMonthlyRent] = React.useState('0')
   const [rentDueDay, setRentDueDay] = React.useState('5')
 
@@ -44,9 +67,6 @@ export function BulkFlatsForm({
     if (plan.toFloor < plan.fromFloor) return []
     return planUnits(plan)
   }, [plan])
-
-  const set = <K extends keyof BulkPlan>(key: K, value: BulkPlan[K]) =>
-    setPlan((current) => ({ ...current, [key]: value }))
 
   async function submit() {
     if (pending) return
@@ -114,29 +134,19 @@ export function BulkFlatsForm({
               error={fields.fromFloor?.[0]}
               hint="−1 for a basement"
             >
-              <Input
-                id="fromFloor"
-                inputMode="numeric"
-                value={plan.fromFloor}
-                onChange={(e) => set('fromFloor', Number(e.target.value))}
-                className="tabular font-mono"
-              />
+              <Input id="fromFloor" {...fromField.props} className="tabular font-mono" />
             </Field>
             <Field label="To floor" htmlFor="toFloor" error={fields.toFloor?.[0]}>
-              <Input
-                id="toFloor"
-                inputMode="numeric"
-                value={plan.toFloor}
-                onChange={(e) => set('toFloor', Number(e.target.value))}
-                className="tabular font-mono"
-              />
+              <Input id="toFloor" {...toField.props} className="tabular font-mono" />
             </Field>
-            <Field label="Units per floor" htmlFor="unitsPerFloor" error={fields.unitsPerFloor?.[0]}>
+            <Field
+              label="Units per floor"
+              htmlFor="unitsPerFloor"
+              error={fields.unitsPerFloor?.[0]}
+            >
               <Input
                 id="unitsPerFloor"
-                inputMode="numeric"
-                value={plan.unitsPerFloor}
-                onChange={(e) => set('unitsPerFloor', Number(e.target.value))}
+                {...perFloorField.props}
                 className="tabular font-mono"
               />
             </Field>
@@ -146,7 +156,10 @@ export function BulkFlatsForm({
                 id="floorStyle"
                 value={plan.floorStyle}
                 onChange={(e) =>
-                  set('floorStyle', e.target.value as BulkPlan['floorStyle'])
+                  setStyles((current) => ({
+                    ...current,
+                    floorStyle: e.target.value as BulkPlan['floorStyle'],
+                  }))
                 }
               >
                 <option value="ground_g">G, then 1, 2, 3</option>
@@ -160,7 +173,10 @@ export function BulkFlatsForm({
                 id="unitStyle"
                 value={plan.unitStyle}
                 onChange={(e) =>
-                  set('unitStyle', e.target.value as BulkPlan['unitStyle'])
+                  setStyles((current) => ({
+                    ...current,
+                    unitStyle: e.target.value as BulkPlan['unitStyle'],
+                  }))
                 }
               >
                 <option value="floor_letter">3A, 3B</option>

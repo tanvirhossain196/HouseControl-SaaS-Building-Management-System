@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Logo } from '@/components/layout/logo'
+import { SiteFooter } from '@/components/layout/site-footer'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { LocaleToggle } from '@/components/layout/locale-toggle'
 import { getTranslations } from '@/lib/i18n'
@@ -13,7 +14,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="container flex h-16 items-center justify-between">
+      <header className="container flex h-[4.5rem] items-center justify-between">
         <Logo />
         <div className="flex items-center gap-3">
           <LocaleToggle current={locale} />
@@ -26,18 +27,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <main id="main" className="flex flex-1 items-center justify-center px-5 py-10">
         <div className="w-full max-w-md">{children}</div>
       </main>
-      <footer className="container py-6">
-        <p className="text-center text-xs text-muted">
-          Protected by verified sign-in.{' '}
-          <Link href="/privacy" className="hover:text-ink">
-            Privacy
-          </Link>{' '}
-          ·{' '}
-          <Link href="/terms" className="hover:text-ink">
-            Terms
-          </Link>
-        </p>
-      </footer>
+      {/* The same footer as the public site: someone deciding whether to
+          trust this with their building's rent should be able to see who
+          built it from the page they are signing up on. */}
+      <SiteFooter />
     </div>
   )
 }

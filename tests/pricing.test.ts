@@ -132,7 +132,7 @@ check('prices are formatted the way they are written on a receipt', () => {
 })
 
 check('plan limits match what the page promises', () => {
-  assert.deepEqual(limitsFor('free'), { buildings: 1, units: 12 })
+  assert.deepEqual(limitsFor('free'), { buildings: 1, units: 2 })
   assert.deepEqual(limitsFor('plus'), { buildings: 1, units: 40 })
   assert.ok(limitsFor('pro').units > 1000)
   assert.equal(planById('nope'), null)

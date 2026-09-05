@@ -21,11 +21,13 @@ export function ProfileMenu({
   email,
   role,
   phoneVerified,
+  avatarUrl,
 }: {
   name: string
   email: string
   role: string
   phoneVerified: boolean
+  avatarUrl?: string | null
 }) {
   const [pending, startTransition] = useTransition()
 
@@ -39,16 +41,19 @@ export function ProfileMenu({
           className="rounded-full transition-opacity hover:opacity-80"
           aria-label="Your account"
         >
-          <Avatar name={name} size="sm" />
+          <Avatar name={name} src={avatarUrl ?? undefined} size="sm" />
         </button>
       }
     >
-      <div className="px-3 py-2.5">
-        <p className="truncate text-sm font-medium text-ink">{name}</p>
-        <p className="truncate text-xs text-muted">{email}</p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <Badge tone="primary">{role}</Badge>
-          {!phoneVerified && <Badge tone="due">Phone unverified</Badge>}
+      <div className="flex items-center gap-3 px-3 py-2.5">
+        <Avatar name={name} src={avatarUrl ?? undefined} size="md" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-ink">{name}</p>
+          <p className="truncate text-xs text-muted">{email}</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Badge tone="primary">{role}</Badge>
+            {!phoneVerified && <Badge tone="due">Phone unverified</Badge>}
+          </div>
         </div>
       </div>
 
