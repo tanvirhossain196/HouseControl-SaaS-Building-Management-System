@@ -95,7 +95,7 @@ export function SiteHeader({ t, locale }: { t: Dictionary; locale: Locale }) {
         Skip to content
       </a>
 
-      <div className="container flex h-[4.5rem] items-center justify-between gap-6">
+      <div className="container flex h-[4.5rem] items-center justify-between gap-3 sm:gap-6">
         <Logo />
 
         <nav aria-label="Main" className="hidden md:block">
@@ -134,7 +134,7 @@ export function SiteHeader({ t, locale }: { t: Dictionary; locale: Locale }) {
           </Link>
         </div>
 
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="flex items-center gap-1.5 md:hidden">
           <LocaleToggle current={locale} />
           <ThemeToggle />
           <Button

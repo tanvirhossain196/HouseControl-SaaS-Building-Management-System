@@ -6,6 +6,7 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
 import { Logo } from '@/components/layout/logo'
 import { ThemeToggle } from '@/components/layout/theme-toggle'
 import { LocaleToggle } from '@/components/layout/locale-toggle'
+import { MobileNav } from '@/components/layout/mobile-nav'
 import { getLocale } from '@/lib/i18n'
 import { GlobalSearch } from '@/components/search/global-search'
 import { NotificationBell } from '@/components/notifications/notification-bell'
@@ -34,18 +35,30 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <PermissionProvider value={{ ...permissionContext(session), role }}>
       <div className="flex min-h-dvh flex-col">
         <header className="sticky top-0 z-50 border-b border-line bg-paper/85 backdrop-blur-md">
-          <div className="mx-auto flex h-[4.5rem] max-w-[1600px] items-center justify-between gap-4 px-5">
+          <div className="mx-auto flex h-[4.5rem] max-w-[1600px] items-center justify-between gap-4 px-4 sm:px-5">
             <Logo href="/dashboard" />
-            <div className="flex items-center gap-3">
+
+            {/*
+              Two controls on a phone — the bell and your own face — because
+              anything more crowds a 360px header. The theme and language
+              switches move inside the profile menu below `sm`, where they are
+              one tap away rather than two competing for the same row.
+            */}
+            <div className="flex items-center gap-2 sm:gap-3">
               <NotificationBell notifications={notifications} unread={unread} />
-              <LocaleToggle current={locale} />
-              <ThemeToggle />
+              <div className="hidden sm:block">
+                <LocaleToggle current={locale} />
+              </div>
+              <div className="hidden sm:block">
+                <ThemeToggle />
+              </div>
               <ProfileMenu
                 name={session.profile?.full_name ?? session.email}
                 email={session.email}
                 role={roleLabels[role]}
                 phoneVerified={session.isPhoneVerified}
                 avatarUrl={session.profile?.avatar_url}
+                locale={locale}
               />
             </div>
           </div>
@@ -60,11 +73,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <AppSidebar role={role} />
           <main
             id="main"
-            className="min-w-0 flex-1 px-4 py-6 sm:px-5 sm:py-8 lg:px-8 lg:py-10"
+            // The bottom padding clears the fixed mobile bar; without it the
+            // last row of every table sits under it.
+            className="min-w-0 flex-1 px-4 pb-24 pt-6 sm:px-5 sm:pt-8 lg:px-8 lg:pb-12 lg:pt-10"
           >
             {children}
           </main>
         </div>
+
+        <MobileNav />
       </div>
     </PermissionProvider>
   )

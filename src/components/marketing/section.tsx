@@ -20,7 +20,7 @@ export function Section({
   children: React.ReactNode
 }) {
   return (
-    <section id={id} className={cn('scroll-mt-20 py-18 md:py-26', className)}>
+    <section id={id} className={cn('scroll-mt-20 py-14 sm:py-18 md:py-26', className)}>
       <div className="container">
         {heading && (
           <div className="max-w-2xl">

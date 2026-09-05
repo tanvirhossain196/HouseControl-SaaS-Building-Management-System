@@ -7,7 +7,9 @@ export function Table({
   ...props
 }: React.TableHTMLAttributes<HTMLTableElement>) {
   return (
-    <div className="w-full overflow-x-auto rounded-panel border border-line bg-surface">
+    // `-mx-4` on a phone lets a wide table use the full screen width
+    // instead of being squeezed inside the page's padding.
+    <div className="-mx-4 w-[calc(100%+2rem)] overflow-x-auto border-y border-line bg-surface sm:mx-0 sm:w-full sm:rounded-panel sm:border">
       <table className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   )
@@ -42,7 +44,10 @@ export function TH({
   return (
     <th
       scope="col"
-      className={cn('px-4 py-3 text-left text-xs font-semibold text-muted', className)}
+      className={cn(
+        'whitespace-nowrap px-4 py-3 text-left text-xs font-semibold text-muted',
+        className,
+      )}
       {...props}
     />
   )

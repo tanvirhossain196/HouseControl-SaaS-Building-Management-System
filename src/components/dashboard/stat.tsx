@@ -15,11 +15,13 @@ export function Stat({
   className?: string
 }) {
   return (
-    <div className={cn('rounded-panel border border-line bg-surface p-5', className)}>
+    <div
+      className={cn('rounded-panel border border-line bg-surface p-4 sm:p-5', className)}
+    >
       <p className="text-sm text-muted">{label}</p>
       <p
         className={cn(
-          'tabular mt-2 font-mono text-[1.75rem] font-semibold leading-none tracking-tight',
+          'tabular mt-2 font-mono text-2xl font-semibold leading-none tracking-tight sm:text-[1.75rem]',
           tone === 'neutral' && 'text-ink',
           tone === 'paid' && 'text-paid',
           tone === 'due' && 'text-due',
