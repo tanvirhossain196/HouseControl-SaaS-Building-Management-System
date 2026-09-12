@@ -24,6 +24,32 @@ export type Plan = {
   featured: boolean
 }
 
+/**
+ * Monthly price, overridable from the environment.
+ *
+ * The real prices live here as defaults, so the app is correctly priced with no
+ * configuration at all. Setting NEXT_PUBLIC_PRICE_PLUS or NEXT_PUBLIC_PRICE_PRO
+ * lowers them for a live test — a checkout only proves anything when real money
+ * moves, and nobody wants to prove it at five hundred taka a go.
+ *
+ * NEXT_PUBLIC_ because the plan cards are rendered in the browser: a
+ * server-only variable would leave the page showing one price and the invoice
+ * charging another, which is the worst of both.
+ *
+ * Delete the variables to go back to the real prices. A bad value is ignored
+ * rather than trusted — a typo should not sell a year of Pro for nothing.
+ */
+function priceOf(value: string | undefined, fallback: number): number {
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback
+
+  return parsed
+}
+
+const PLUS_MONTHLY = priceOf(process.env.NEXT_PUBLIC_PRICE_PLUS, 500)
+const PRO_MONTHLY = priceOf(process.env.NEXT_PUBLIC_PRICE_PRO, 1000)
+
 export const PLANS: Plan[] = [
   {
     id: 'free',
@@ -59,7 +85,7 @@ export const PLANS: Plan[] = [
     id: 'plus',
     name: 'Plus',
     nameBn: 'প্লাস',
-    monthly: 500,
+    monthly: PLUS_MONTHLY,
     tagline: 'Two buildings with online payment support.',
     taglineBn: 'অনলাইন পেমেন্টসহ দুটি বিল্ডিংয়ের জন্য।',
     buildings: 2,
@@ -89,7 +115,7 @@ export const PLANS: Plan[] = [
     id: 'pro',
     name: 'Pro',
     nameBn: 'প্রো',
-    monthly: 1000,
+    monthly: PRO_MONTHLY,
     tagline: 'Several buildings, caretakers and complete organization control.',
     taglineBn: 'একাধিক বিল্ডিং, কেয়ারটেকার ও পূর্ণ সংগঠন নিয়ন্ত্রণ।',
     buildings: 'unlimited',
