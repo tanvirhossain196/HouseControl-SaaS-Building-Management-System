@@ -14,6 +14,7 @@ import {
 } from '@/lib/gateway/signature'
 import type { Json } from '@/types'
 import { sslConfig, startSession, validateTransaction } from '@/lib/gateway/sslcommerz'
+import { createInvoice, hasZinipay } from '@/lib/gateway/zinipay'
 
 /**
  * Online payments.
@@ -33,6 +34,26 @@ import { sslConfig, startSession, validateTransaction } from '@/lib/gateway/sslc
  */
 
 export type CheckoutResult = { redirectUrl: string; transactionId: string }
+
+/**
+ * Which provider takes rent.
+ *
+ * Separate from the subscription switch on purpose. Subscriptions are our own
+ * revenue; rent belongs to a landlord, and the two can reasonably run through
+ * different providers.
+ *
+ * Set RENT_GATEWAY to force one. Left unset, ZiniPay is used when configured,
+ * because an SSLCommerz sandbox store takes a card and moves no money — which
+ * is worse than having no button at all.
+ */
+function rentProvider(): 'zinipay' | 'sslcommerz' {
+  const configured = process.env.RENT_GATEWAY?.trim().toLowerCase()
+
+  if (configured === 'sslcommerz') return 'sslcommerz'
+  if (configured === 'zinipay') return 'zinipay'
+
+  return hasZinipay() ? 'zinipay' : 'sslcommerz'
+}
 
 export async function startCheckout(
   userId: string,
@@ -90,6 +111,65 @@ export async function startCheckout(
   if (error) throw toAppError(error)
 
   const base = env.NEXT_PUBLIC_SITE_URL
+
+  /**
+   * The gateway returns the resident with a cross-site form POST, which a page
+   * route cannot take: middleware blocks it, and the Lax session cookie would
+   * not be sent either. The bridge route absorbs the POST and answers 303, so
+   * /payments/return is reached by a same-site GET with the session intact.
+   */
+  const returnTo = encodeURIComponent('/payments/return')
+  const provider = rentProvider()
+
+  /**
+   * `handler` tells the bridge which service settles this payment. Without it
+   * the return lands on the page and nothing verifies the transaction, leaving
+   * the row pending until the webhook happens to arrive.
+   */
+  const handler = provider === 'zinipay' ? 'rent-zinipay' : 'payment'
+
+  const returnUrl = (status: string) =>
+    `${base}/api/gateway/return?to=${returnTo}&handler=${handler}&status=${status}&tran=${transactionId}`
+
+  if (provider === 'zinipay') {
+    const invoice = await createInvoice({
+      amount,
+      customerName: profile?.full_name ?? 'Resident',
+      customerEmail: profile?.email ?? 'resident@example.com',
+      redirectUrl: returnUrl('success'),
+      cancelUrl: returnUrl('cancelled'),
+      webhookUrl: `${base}/api/payments/webhook/zinipay`,
+      metadata: { transaction_id: transactionId, flat_id: input.flatId },
+    })
+
+    /**
+     * The invoice id is stored before the resident can possibly finish paying.
+     * It is how the webhook finds this row again, and the webhook can arrive
+     * before the browser does.
+     */
+    const { error: referenceError } = await supabase
+      .from('payments')
+      .update({
+        gateway: 'zinipay',
+        gateway_status: 'initiated',
+        bank_transaction_id: invoice.invoiceId,
+      })
+      .eq('id', payment.id)
+      .eq('status', 'pending')
+
+    if (referenceError) throw toAppError(referenceError)
+
+    await writeAuditLog({
+      actorId: userId,
+      action: 'payment.checkout_started',
+      entityType: 'payment',
+      entityId: payment.id,
+      after: { amount, transactionId, provider: 'zinipay' },
+    })
+
+    return { redirectUrl: invoice.paymentUrl, transactionId }
+  }
+
   const session = await startSession({
     transactionId,
     amount,
@@ -97,9 +177,9 @@ export async function startCheckout(
     customerEmail: profile?.email ?? 'resident@example.com',
     customerPhone: profile?.phone ?? '01700000000',
     productName: due.description ?? 'Rent',
-    successUrl: `${base}/payments/return?status=success&tran=${transactionId}`,
-    failUrl: `${base}/payments/return?status=failed&tran=${transactionId}`,
-    cancelUrl: `${base}/payments/return?status=cancelled&tran=${transactionId}`,
+    successUrl: returnUrl('success'),
+    failUrl: returnUrl('failed'),
+    cancelUrl: returnUrl('cancelled'),
     ipnUrl: `${base}/api/payments/webhook/sslcommerz`,
   })
 

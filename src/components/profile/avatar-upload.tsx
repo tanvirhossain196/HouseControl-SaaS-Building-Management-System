@@ -3,7 +3,6 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Camera, Trash2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { saveAvatarAction } from '@/app/(app)/settings/profile/actions'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -59,6 +58,15 @@ export function AvatarUpload({
     setPending(true)
 
     try {
+      /**
+       * Loaded when somebody actually picks a file.
+       *
+       * supabase-js is about 88kB, and it is the only reason this page shipped
+       * roughly twice the JavaScript of every other one. Nothing on the profile
+       * screen needs it until an avatar is being uploaded — which most visits
+       * never do — so it is fetched at that moment instead of on load.
+       */
+      const { createClient } = await import('@/lib/supabase/client')
       const supabase = createClient()
       const {
         data: { user },

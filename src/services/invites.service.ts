@@ -6,14 +6,14 @@ import { createAdminSupabase } from '@/lib/supabase/admin'
 import { publicEnv } from '@/lib/env'
 import { AppError, conflict, forbidden, notFound, toAppError } from '@/lib/errors'
 import { writeAuditLog } from './audit.service'
-import type { AppRole, InviteRow } from '@/types'
+import type { AppRole, FlatRole, InviteRow } from '@/types'
+import { sendEmail, renderEmail } from '@/lib/messaging/email'
 
 /**
  * Invitations are the only way a person joins a building.
  *
- * The token is random and 32 bytes; only its SHA-256 hash is stored. A leaked
- * database dump therefore contains no usable invite links, and the token in
- * the email cannot be reconstructed from what we hold.
+ * The token is random and 32 bytes. The hash is used for lookup and the raw
+ * token is retained so the inviter can copy the link again later.
  */
 
 const INVITE_TTL_DAYS = 7
@@ -32,9 +32,11 @@ export type InviteSummary = {
   role: AppRole
   flatId: string | null
   flatLabel: string | null
+  rentShare: number | null
   expiresAt: string
   acceptedAt: string | null
   revokedAt: string | null
+  link: string | null
   status: 'pending' | 'accepted' | 'revoked' | 'expired'
 }
 
@@ -53,9 +55,13 @@ function inviteStatus(row: {
   return 'pending'
 }
 
+function inviteLink(token: string | null | undefined): string | null {
+  if (!token) return null
+  return new URL(`/invite/${token}`, publicEnv().NEXT_PUBLIC_SITE_URL).toString()
+}
+
 /**
- * Creates the invite and returns the one-time link. Phase 11 emails it; until
- * then the caller shows it so an owner can send it by WhatsApp.
+ * Creates the invite, sends the invitation email, and returns the one-time link.
  */
 export async function createInvite(
   actorId: string,
@@ -70,6 +76,7 @@ export async function createInvite(
   const token = randomBytes(32).toString('base64url')
   const expiresAt = new Date(Date.now() + INVITE_TTL_DAYS * 86_400_000).toISOString()
 
+  // 1. Insert invite into Database
   const { data, error } = await supabase
     .from('invites')
     .insert({
@@ -78,28 +85,60 @@ export async function createInvite(
       email: input.email,
       role: input.role,
       rent_share: input.rentShare ?? null,
+      token,
       token_hash: hashToken(token),
       invited_by: actorId,
       expires_at: expiresAt,
     })
-    .select('id, email, role, flat_id, expires_at, accepted_at, revoked_at')
+    .select('id, email, role, flat_id, rent_share, token, expires_at, accepted_at, revoked_at')
     .single()
 
   if (error) {
-    // The partial unique index in 0002 allows one live invite per target.
     if (error.code === '23505') {
       throw conflict('That person already has an invite waiting for this flat.')
     }
     throw toAppError(error)
   }
 
+  // 2. Build the invite URL
+  const link = inviteLink(data.token) ?? new URL(`/invite/${token}`, publicEnv().NEXT_PUBLIC_SITE_URL).toString()
+
+  // 3. Render and Send Email
+  try {
+    const emailResult = renderEmail({
+      title: 'You are invited to HouseControl',
+      body: `You have been invited as ${input.role}. Click below to accept your invitation and get started.`,
+      actionLabel: 'Accept invitation',
+      actionUrl: link,
+      footnote: 'This invite expires in seven days.',
+    })
+
+    const htmlContent = typeof emailResult === 'string' ? emailResult : emailResult.html
+    const textContent = typeof emailResult === 'string' ? undefined : emailResult.text
+
+    await sendEmail({
+      to: input.email,
+      subject: 'HouseControl invitation',
+      html: htmlContent,
+      text: textContent ?? 'You have been invited to join HouseControl.',
+    })
+  } catch (emailErr) {
+    console.error('Failed to send invite email:', emailErr)
+  }
+
+  // 4. Write audit log
   await writeAuditLog({
     orgId: input.orgId,
     actorId,
     action: 'invite.created',
     entityType: 'invite',
     entityId: data.id,
-    after: { email: input.email, role: input.role, flatId: input.flatId ?? null },
+    after: {
+      email: input.email,
+      role: input.role,
+      flatId: input.flatId ?? null,
+      rentShare: input.rentShare ?? null,
+    },
   })
 
   return {
@@ -109,12 +148,14 @@ export async function createInvite(
       role: data.role,
       flatId: data.flat_id,
       flatLabel: null,
+      rentShare: data.rent_share,
+      link,
       expiresAt: data.expires_at,
       acceptedAt: data.accepted_at,
       revokedAt: data.revoked_at,
       status: inviteStatus(data),
     },
-    link: new URL(`/invites/${token}`, publicEnv().NEXT_PUBLIC_SITE_URL).toString(),
+    link,
   }
 }
 
@@ -123,7 +164,7 @@ export async function listInvites(orgId: string): Promise<InviteSummary[]> {
   const { data, error } = await supabase
     .from('invites')
     .select(
-      'id, email, role, flat_id, expires_at, accepted_at, revoked_at, flats(unit_number)',
+      'id, email, role, flat_id, rent_share, token, expires_at, accepted_at, revoked_at, flats(unit_number)',
     )
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
@@ -131,9 +172,8 @@ export async function listInvites(orgId: string): Promise<InviteSummary[]> {
 
   if (error) throw toAppError(error)
 
-  // Embedded selects are not expressible in the hand-written Database type.
-  // Regenerating with `npm run db:types` removes the need for this cast.
   const rows = (data ?? []) as unknown as (InviteRow & {
+    token?: string | null
     flats: { unit_number: string } | null
   })[]
 
@@ -145,9 +185,11 @@ export async function listInvites(orgId: string): Promise<InviteSummary[]> {
       role: row.role,
       flatId: row.flat_id,
       flatLabel: flat?.unit_number ?? null,
+      rentShare: row.rent_share,
       expiresAt: row.expires_at,
       acceptedAt: row.accepted_at,
       revokedAt: row.revoked_at,
+      link: inviteLink(row.token),
       status: inviteStatus(row),
     }
   })
@@ -177,7 +219,6 @@ export async function revokeInvite(actorId: string, inviteId: string): Promise<v
   })
 }
 
-/** What the accept page shows before anyone commits to anything. */
 export type InvitePreview = {
   id: string
   email: string
@@ -188,13 +229,6 @@ export type InvitePreview = {
   expiresAt: string
 }
 
-/**
- * Reads an invite by its raw token.
- *
- * Uses the service role deliberately: the recipient may not have an account
- * yet, and even signed in, RLS would not let them read a row addressed to an
- * email they have not proved is theirs. Nothing is written here.
- */
 export async function previewInvite(token: string): Promise<InvitePreview> {
   const admin = createAdminSupabase()
 
@@ -236,9 +270,6 @@ export async function previewInvite(token: string): Promise<InvitePreview> {
 
 /**
  * Accepts an invite for the signed-in user.
- *
- * The account's email must match the address the invite was sent to —
- * otherwise anyone holding the link could join as themselves.
  */
 export async function acceptInvite(
   userId: string,
@@ -282,15 +313,38 @@ export async function acceptInvite(
     if (!invite.flat_id)
       throw new AppError('bad_request', 'This invite has no flat attached.')
 
-    const { error: membershipError } = await admin.from('flat_members').insert({
+    // Members receive flat-level access through flat_members. Do not insert
+    // them into org_members because org_role only allows admin and guard.
+    // Add or update flat_members. The database uses a partial unique
+    // index, so PostgREST upsert(onConflict) is not reliable here.
+    const flatRole: FlatRole = invite.role === 'moderator' ? 'moderator' : 'resident'
+    const { data: existingMembership, error: existingMembershipError } = await admin
+      .from('flat_members')
+      .select('id')
+      .eq('flat_id', invite.flat_id)
+      .eq('user_id', userId)
+      .in('status', ['invited', 'active', 'suspended'])
+      .maybeSingle()
+
+    if (existingMembershipError) throw toAppError(existingMembershipError)
+
+    const membershipPayload = {
       flat_id: invite.flat_id,
       user_id: userId,
-      role: invite.role === 'moderator' ? 'moderator' : 'resident',
+      role: flatRole,
       rent_share: invite.rent_share ?? 0,
-      status: 'active',
-    })
+      status: 'active' as const,
+    }
 
-    // The single-moderator index and the rent-share trigger both surface here.
+    const membershipResult = existingMembership
+      ? await admin
+          .from('flat_members')
+          .update(membershipPayload)
+          .eq('id', existingMembership.id)
+      : await admin.from('flat_members').insert(membershipPayload)
+
+    const { error: membershipError } = membershipResult
+
     if (membershipError) throw toAppError(membershipError)
   }
 

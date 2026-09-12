@@ -1,90 +1,189 @@
 import Link from 'next/link'
+
 import { pageMetadata } from '@/lib/seo'
 import { PERIODS } from '@/lib/pricing'
 import { PlanTable } from '@/components/pricing/plan-table'
 import { Section } from '@/components/marketing/section'
 import { FaqAccordion } from '@/components/marketing/faq-accordion'
+import { buttonVariants } from '@/components/ui/button'
 
 export const metadata = pageMetadata({
   title: 'Pricing',
   description:
-    'Free for one building up to 12 units. Plus at ৳500 a month, Pro at ৳1,000, with up to 20% off longer commitments.',
+    'Start free with one building and upgrade when your property grows. Flexible monthly and yearly plans with future online payment support.',
   path: '/pricing',
 })
 
 const pricingFaqs = [
   {
     q: 'Is the Free plan a trial?',
-    a: 'No. One building and twelve units, for as long as you want it. Most family-owned walk-ups never need more than that, and charging them for it would be charging for nothing.',
+    a: 'No. The Free plan is available for one building and up to twelve units for as long as you need it. Your data remains yours and is not deleted.',
   },
   {
     q: 'What happens if I go over the unit limit?',
-    a: 'Nothing breaks and nothing is deleted. Adding the thirteenth unit asks you to upgrade; everything already there keeps working, including the rent you have already billed.',
+    a: 'Nothing breaks and nothing is deleted. You will be asked to upgrade before adding units beyond your current plan limit. Existing buildings, residents, dues and payment records continue to work.',
   },
   {
-    q: 'How do I pay?',
-    a: 'Over WhatsApp for now — bKash, Nagad, bank transfer or card. You get a receipt, and the plan is switched on the same day. Card payment inside the app is being built.',
+    q: 'How will online payment work?',
+    a: 'After selecting a paid plan, billing will be managed from Settings → Billing. The system is prepared for automatic gateway checkout, payment verification, subscription activation and webhook-based renewal updates.',
   },
   {
     q: 'Can I change plans later?',
-    a: 'Yes, in either direction. Moving up takes effect immediately; moving down takes effect at the end of what you have paid for, so you never lose time you bought.',
+    a: 'Yes. You can upgrade when your property grows. Upgrades can be activated immediately, while downgrades can take effect after the current paid period ends.',
   },
   {
     q: 'Is the price per building or per person?',
-    a: 'Per organization. Add every resident, moderator and guard the building has — you are never charged for another person.',
+    a: 'Plans are priced per organization and property usage, not per individual resident. You can add residents, moderators and guards according to your plan limits.',
   },
   {
-    q: 'What if I stop paying?',
-    a: 'The account drops to Free rather than closing. Your data stays; the features above the Free limit stop until you renew. Nothing is deleted for non-payment.',
+    q: 'What happens if I stop paying?',
+    a: 'Your data is not deleted. Paid features may be restricted after the subscription period ends, while your organization remains available for renewal.',
+  },
+  {
+    q: 'Will payment gateway support be added?',
+    a: 'Yes. The subscription structure includes provider, provider reference, subscription status and billing period fields, so gateways such as SSLCommerz, bKash or other providers can be connected later.',
   },
 ]
 
 export default function PricingPage() {
-  const best = PERIODS.reduce((max, period) => Math.max(max, period.discount), 0)
+  const bestDiscount = PERIODS.reduce(
+    (maximum, period) => Math.max(maximum, period.discount),
+    0,
+  )
 
   return (
     <>
       <Section
-        heading="Priced per building, not per person"
-        intro={`Start free and stay free if one building is all you have. Pay by the month, or commit for longer and take up to ${best}% off.`}
+        heading="Priced for your building, not per person"
+        intro={`Start free and upgrade when you need more control. Choose monthly or longer commitments and save up to ${bestDiscount}%.`}
       >
         <PlanTable />
+
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 text-center sm:flex-row">
+          <Link
+            href="/sign-up?next=%2Fsettings%2Fbilling"
+            className={buttonVariants({
+              variant: 'primary',
+              size: 'sm',
+            })}
+          >
+            Get started
+          </Link>
+
+          <Link
+            href="/sign-in?next=%2Fsettings%2Fbilling"
+            className={buttonVariants({
+              variant: 'outline',
+              size: 'sm',
+            })}
+          >
+            I already have an account
+          </Link>
+        </div>
+
+        <p className="mt-4 text-center text-xs text-muted">
+          You can create an account first and activate a paid plan later from
+          Settings → Billing.
+        </p>
       </Section>
 
-      <Section heading="What each plan is for" className="rule bg-surface">
+      <Section
+        heading="What each plan is for"
+        className="rule bg-surface"
+      >
         <div className="grid gap-8 md:grid-cols-3">
           <div>
-            <h3 className="font-semibold text-ink">Free</h3>
+            <h3 className="font-semibold text-ink">
+              Free
+            </h3>
+
             <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-muted">
-              One building you own and live near. Rent is collected by bKash and confirmed
-              by you, the guard writes in a book, and what you want is the arguing to
-              stop. This covers all of that.
+              For one small building with basic resident, rent and dues
+              management. It is a permanent free plan, not a temporary trial.
             </p>
           </div>
+
           <div>
-            <h3 className="font-semibold text-ink">Plus</h3>
+            <h3 className="font-semibold text-ink">
+              Plus
+            </h3>
+
             <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-muted">
-              The same building, but you would rather the rent arrived on its own.
-              Residents pay online, receipts issue themselves, and the overdue list
-              becomes a text message rather than a phone call.
+              For buildings that need smoother rent collection, resident
+              communication, payment records and automated billing workflows.
             </p>
           </div>
+
           <div>
-            <h3 className="font-semibold text-ink">Pro</h3>
+            <h3 className="font-semibold text-ink">
+              Pro
+            </h3>
+
             <p className="mt-2 max-w-[42ch] text-sm leading-relaxed text-muted">
-              More than one building, and other people running them for you. The audit log
-              and the landlord rent records are what this tier is really for — knowing who
-              changed what while you were not looking.
+              For larger organizations managing multiple buildings, moderators,
+              audit history, landlord records and advanced operational controls.
             </p>
           </div>
         </div>
       </Section>
 
-      <Section heading="Questions about paying">
+      <Section heading="How subscription activation works">
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-panel border border-line bg-surface p-5">
+            <p className="text-sm font-semibold text-primary">
+              01
+            </p>
+
+            <h3 className="mt-2 font-semibold text-ink">
+              Choose a plan
+            </h3>
+
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Select Free, Plus or Pro and choose your billing period.
+            </p>
+          </div>
+
+          <div className="rounded-panel border border-line bg-surface p-5">
+            <p className="text-sm font-semibold text-primary">
+              02
+            </p>
+
+            <h3 className="mt-2 font-semibold text-ink">
+              Complete payment
+            </h3>
+
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Future gateway checkout will securely create a payment reference
+              and confirm the transaction through a webhook.
+            </p>
+          </div>
+
+          <div className="rounded-panel border border-line bg-surface p-5">
+            <p className="text-sm font-semibold text-primary">
+              03
+            </p>
+
+            <h3 className="mt-2 font-semibold text-ink">
+              Features activate
+            </h3>
+
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              After verified payment, the organization subscription becomes
+              active and the plan limits are applied automatically.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      <Section heading="Questions about pricing">
         <FaqAccordion items={pricingFaqs} />
+
         <p className="mt-8 text-sm text-muted">
           Something not answered here?{' '}
-          <Link href="/contact" className="text-primary hover:underline">
+          <Link
+            href="/contact"
+            className="text-primary hover:underline"
+          >
             Ask us
           </Link>
           .

@@ -2,14 +2,15 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Copy } from 'lucide-react'
-import { inviteToFlatAction } from '@/app/(app)/flats/actions'
+import { Check, Copy, Trash2 } from 'lucide-react'
+import { inviteToFlatAction, revokeInviteAction } from '@/app/(app)/flats/actions'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/input'
 import { FormError } from '@/components/auth/form-error'
 import { useToast } from '@/components/providers/toast-provider'
 import { formatTaka } from '@/lib/utils'
+import type { PendingShare } from '@/services/flats.service'
 
 /**
  * Invites straight into this flat, so a moderator never has to go through the
@@ -18,10 +19,12 @@ import { formatTaka } from '@/lib/utils'
 export function InviteResident({
   flatId,
   unassigned,
+  pendingInvites = [],
   trigger,
 }: {
   flatId: string
   unassigned: number
+  pendingInvites?: PendingShare[]
   trigger: React.ReactElement
 }) {
   const router = useRouter()
@@ -33,6 +36,30 @@ export function InviteResident({
   const [link, setLink] = React.useState<string | null>(null)
   const [copied, setCopied] = React.useState(false)
   const formRef = React.useRef<HTMLFormElement>(null)
+
+  function fullInviteLink(token: string) {
+    return `${window.location.origin}/invite/${token}`
+  }
+
+  async function copyInvite(token: string) {
+    await navigator.clipboard.writeText(fullInviteLink(token))
+    toast({ tone: 'success', title: 'Invite link copied' })
+  }
+
+  async function revokeInvite(inviteId: string) {
+    if (pending) return
+    setPending(true)
+    const result = await revokeInviteAction(flatId, inviteId)
+    setPending(false)
+
+    if (!result.ok) {
+      toast({ tone: 'error', title: result.error })
+      return
+    }
+
+    toast({ tone: 'success', title: 'Invite removed' })
+    router.refresh()
+  }
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -158,6 +185,71 @@ export function InviteResident({
           </div>
         )}
       </Modal>
+
+      {pendingInvites.length > 0 && (
+        <div className="mt-4 rounded-panel border border-line bg-surface p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold text-ink">Pending invites</h3>
+              <p className="mt-1 text-xs text-muted">
+                Copy a member-specific link or remove the invite.
+              </p>
+            </div>
+            <span className="rounded-full bg-surface-subtle px-2 py-1 text-xs text-muted">
+              {pendingInvites.length}
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {pendingInvites.map((invite) => (
+              <div
+                key={invite.id ?? invite.email}
+                className="rounded-control border border-line p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-ink">{invite.email}</p>
+                    <p className="mt-1 text-xs text-muted">
+                      {invite.role === 'moderator' ? 'Moderator' : 'Resident'} ·{' '}
+                      {formatTaka(invite.share)}
+                    </p>
+                  </div>
+                  {invite.id && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove invite for ${invite.email}`}
+                      onClick={() => revokeInvite(invite.id!)}
+                      disabled={pending}
+                    >
+                      <Trash2 />
+                    </Button>
+                  )}
+                </div>
+
+                {invite.token && (
+                  <div className="mt-3 flex gap-2">
+                    <Input
+                      readOnly
+                      value={fullInviteLink(invite.token)}
+                      className="font-mono text-xs"
+                      onFocus={(event) => event.target.select()}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label={`Copy invite link for ${invite.email}`}
+                      onClick={() => copyInvite(invite.token!)}
+                    >
+                      <Copy />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   )
 }

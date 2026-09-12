@@ -1,13 +1,9 @@
 /**
- * Plans and what they cost.
+ * HouseControl plans and pricing.
  *
- * Three tiers and four billing periods, with the discount growing as the
- * commitment does. The arithmetic is here and pure because a price shown on
- * the marketing page, a total on the upgrade screen and the figure sent to
- * WhatsApp must be the same number — three places computing it separately is
- * how a customer is quoted one price and charged another.
- *
- * `npm run test:pricing` covers it.
+ * All plan prices and limits are defined here so the marketing page,
+ * billing page, checkout flow and subscription validation always use the
+ * same values.
  */
 
 export type PlanId = 'free' | 'plus' | 'pro'
@@ -16,7 +12,7 @@ export type Plan = {
   id: PlanId
   name: string
   nameBn: string
-  /** Taka per month, billed monthly. Discounts come off this. */
+  /** Base price in BDT per month. */
   monthly: number
   tagline: string
   taglineBn: string
@@ -24,7 +20,6 @@ export type Plan = {
   units: number | 'unlimited'
   features: string[]
   featuresBn: string[]
-  /** What this tier does not include, said plainly. */
   missing: string[]
   featured: boolean
 }
@@ -35,12 +30,12 @@ export const PLANS: Plan[] = [
     name: 'Free',
     nameBn: 'ফ্রি',
     monthly: 0,
-    tagline: 'One building, two units. Enough to see whether it fits.',
-    taglineBn: 'একটি বিল্ডিং, ২টি ইউনিট। কাজে লাগবে কি না দেখে নেওয়ার জন্য।',
+    tagline: 'One building, up to four units. Free forever.',
+    taglineBn: 'একটি বিল্ডিং, সর্বোচ্চ ৪টি ইউনিট। সবসময় ফ্রি।',
     buildings: 1,
-    units: 2,
+    units: 4,
     features: [
-      '1 building, up to 2 units',
+      '1 building, up to 4 units',
       'Rent, dues and shared bills',
       'Residents and rent splitting',
       'Gate register and visitor log',
@@ -49,7 +44,7 @@ export const PLANS: Plan[] = [
       'Email reminders',
     ],
     featuresBn: [
-      '১টি বিল্ডিং, সর্বোচ্চ ২টি ইউনিট',
+      '১টি বিল্ডিং, সর্বোচ্চ ৪টি ইউনিট',
       'ভাড়া, বকেয়া ও শেয়ার্ড বিল',
       'ভাড়াটিয়া ও ভাড়া ভাগাভাগি',
       'গেট রেজিস্টার ও ভিজিটর লগ',
@@ -57,7 +52,7 @@ export const PLANS: Plan[] = [
       'হাতে পেমেন্ট নিশ্চিত করা',
       'ইমেইল রিমাইন্ডার',
     ],
-    missing: ['Online payments', 'SMS alerts', 'PDF statements'],
+    missing: ['Online subscription payments', 'SMS alerts', 'PDF statements'],
     featured: false,
   },
   {
@@ -65,29 +60,29 @@ export const PLANS: Plan[] = [
     name: 'Plus',
     nameBn: 'প্লাস',
     monthly: 500,
-    tagline: 'For one full building, with money coming in online.',
-    taglineBn: 'একটি পূর্ণ বিল্ডিংয়ের জন্য, অনলাইন পেমেন্ট সহ।',
-    buildings: 1,
-    units: 40,
+    tagline: 'Two buildings with online payment support.',
+    taglineBn: 'অনলাইন পেমেন্টসহ দুটি বিল্ডিংয়ের জন্য।',
+    buildings: 2,
+    units: 34,
     features: [
       'Everything in Free',
-      '1 building, up to 40 units',
+      '2 buildings, up to 34 units total',
       'bKash, Nagad, card and bank payments',
       'PDF receipts and monthly statements',
       'SMS reminders for overdue rent',
-      'Reports: collection, arrears ageing, expenses',
+      'Reports: collection, arrears ageing and expenses',
       'CSV exports for your accountant',
     ],
     featuresBn: [
       'ফ্রি-এর সবকিছু',
-      '১টি বিল্ডিং, সর্বোচ্চ ৪০টি ইউনিট',
+      '২টি বিল্ডিং, মোট সর্বোচ্চ ৩৪টি ইউনিট',
       'বিকাশ, নগদ, কার্ড ও ব্যাংক পেমেন্ট',
       'পিডিএফ রসিদ ও মাসিক স্টেটমেন্ট',
       'বকেয়া ভাড়ার এসএমএস রিমাইন্ডার',
-      'রিপোর্ট: আদায়, বকেয়ার বয়স, খরচ',
+      'আদায়, বকেয়া ও খরচের রিপোর্ট',
       'হিসাবরক্ষকের জন্য সিএসভি এক্সপোর্ট',
     ],
-    missing: ['More than one building', 'Audit log export'],
+    missing: ['More than two buildings', 'Audit log export'],
     featured: true,
   },
   {
@@ -95,8 +90,8 @@ export const PLANS: Plan[] = [
     name: 'Pro',
     nameBn: 'প্রো',
     monthly: 1000,
-    tagline: 'Several buildings, several caretakers, one set of books.',
-    taglineBn: 'একাধিক বিল্ডিং, একাধিক কেয়ারটেকার, একটাই হিসাব।',
+    tagline: 'Several buildings, caretakers and complete organization control.',
+    taglineBn: 'একাধিক বিল্ডিং, কেয়ারটেকার ও পূর্ণ সংগঠন নিয়ন্ত্রণ।',
     buildings: 'unlimited',
     units: 'unlimited',
     features: [
@@ -112,7 +107,7 @@ export const PLANS: Plan[] = [
       'প্লাস-এর সবকিছু',
       'সীমাহীন বিল্ডিং ও ইউনিট',
       'সীমাহীন গার্ড ও মডারেটর',
-      'সিএসভি এক্সপোর্ট সহ অডিট লগ',
+      'সিএসভি এক্সপোর্টসহ অডিট লগ',
       'বাড়িওয়ালার ভাড়ার হিসাব',
       'বাংলা ও ইংরেজিতে অগ্রাধিকার সাপোর্ট',
       'চাহিদামতো ডেটা এক্সপোর্ট ও ব্যাকআপ',
@@ -126,50 +121,59 @@ export type BillingPeriod = {
   months: number
   label: string
   labelBn: string
-  /** Percentage off the monthly rate. */
+  /** Percentage discount from the base monthly price. */
   discount: number
   popular?: boolean
 }
 
-/**
- * The discount grows with the commitment, and stops at 20%.
- *
- * Past a fifth off, a year up front stops looking like a discount and starts
- * looking like the monthly price was invented — which is the impression that
- * loses the customer who was going to pay monthly.
- */
 export const PERIODS: BillingPeriod[] = [
-  { months: 1, label: 'Monthly', labelBn: 'মাসিক', discount: 0 },
-  { months: 3, label: '3 months', labelBn: '৩ মাস', discount: 5 },
-  { months: 6, label: '6 months', labelBn: '৬ মাস', discount: 10, popular: true },
-  { months: 12, label: '1 year', labelBn: '১ বছর', discount: 20 },
+  {
+    months: 1,
+    label: 'Monthly',
+    labelBn: 'মাসিক',
+    discount: 0,
+  },
+  {
+    months: 3,
+    label: '3 months',
+    labelBn: '৩ মাস',
+    discount: 5,
+  },
+  {
+    months: 6,
+    label: '6 months',
+    labelBn: '৬ মাস',
+    discount: 10,
+    popular: true,
+  },
+  {
+    months: 12,
+    label: '1 year',
+    labelBn: '১ বছর',
+    discount: 20,
+  },
 ]
 
 export type Quote = {
   planId: PlanId
   months: number
-  /** What it would cost with no discount. */
   listPrice: number
-  /** What it costs. */
   total: number
   saved: number
   discount: number
-  /** The figure people compare between plans. */
   effectiveMonthly: number
 }
 
 /**
- * Quotes a plan for a period.
- *
- * Rounded to whole taka, and the effective monthly is rounded too — an
- * invoice that says ৳666.67 for something paid in one lump is arithmetic
- * showing through the product.
+ * Calculates the exact amount for a selected plan and billing period.
  */
 export function quote(planId: PlanId, months: number): Quote {
   const plan = PLANS.find((candidate) => candidate.id === planId) ?? PLANS[0]!
+
   const period = PERIODS.find((candidate) => candidate.months === months) ?? PERIODS[0]!
 
   const listPrice = plan.monthly * period.months
+
   const total = Math.round((listPrice * (100 - period.discount)) / 100)
 
   return {
@@ -183,7 +187,9 @@ export function quote(planId: PlanId, months: number): Quote {
   }
 }
 
-/** "৳4,000" — the only place plan prices are formatted. */
+/**
+ * Formats amounts consistently across pricing and billing pages.
+ */
 export function taka(amount: number): string {
   return `৳${new Intl.NumberFormat('en-US').format(Math.round(amount))}`
 }
@@ -192,11 +198,18 @@ export function planById(id: string): Plan | null {
   return PLANS.find((plan) => plan.id === id) ?? null
 }
 
-/** What a plan allows, for the limit checks in the services. */
-export function limitsFor(planId: PlanId): { buildings: number; units: number } {
+/**
+ * Converts product limits into numeric values used by services.
+ */
+export function limitsFor(planId: PlanId): {
+  buildings: number
+  units: number
+} {
   const plan = planById(planId) ?? PLANS[0]!
+
   return {
     buildings: plan.buildings === 'unlimited' ? 999 : plan.buildings,
+
     units: plan.units === 'unlimited' ? 100_000 : plan.units,
   }
 }

@@ -1,96 +1,216 @@
+import Link from 'next/link'
+
 import { pageMetadata } from '@/lib/seo'
 import { requireSession } from '@/lib/auth/session'
-import { sessionCan } from '@/lib/auth/guards'
+import { reviewableFlatIds, listReviewScope } from '@/lib/auth/reviewable'
+import { sessionCan, sessionRole } from '@/lib/auth/guards'
 import { createServerSupabase } from '@/lib/supabase/server'
-import { listPaymentsForFlats, listPendingPayments } from '@/services/payments.service'
+
+import {
+  listPaymentsForFlats,
+  listPaymentsForUser,
+  listPendingPayments,
+} from '@/services/payments.service'
+
 import { formatTaka } from '@/lib/utils'
 import { periodOf, periodLabel } from '@/lib/billing'
+
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { Stat } from '@/components/dashboard/stat'
 import { Tabs } from '@/components/ui/tabs'
 import { ReviewQueue } from '@/components/money/review-queue'
 import { PaymentHistory } from '@/components/money/payment-history'
+import { buttonVariants } from '@/components/ui/button'
 
 export const metadata = pageMetadata({
   title: 'Payments',
-  description: 'Confirm what has come in.',
+  description: 'View your payments or confirm resident payments.',
   path: '/payments',
   noIndex: true,
 })
 
-/**
- * Every flat this person may review payments for: the ones they moderate,
- * plus every flat in an organization they own.
- */
-async function reviewableFlatIds(
-  session: Awaited<ReturnType<typeof requireSession>>,
-): Promise<string[]> {
-  const moderated = session.memberships.flats
-    .filter((flat) => flat.role === 'moderator')
-    .map((flat) => flat.flatId)
+async function ResidentPaymentsPage({
+  userId,
+}: {
+  userId: string
+}) {
+  const payments = await listPaymentsForUser(userId).catch(() => [])
 
-  const adminOrgs = session.memberships.orgs
-    .filter((org) => org.role === 'admin')
-    .map((org) => org.orgId)
+  const period = periodOf()
 
-  if (adminOrgs.length === 0) return moderated
+  const confirmedThisMonth = payments.filter(
+    (payment) =>
+      payment.status === 'confirmed' &&
+      payment.paid_at?.startsWith(period.slice(0, 7)),
+  )
 
-  const supabase = createServerSupabase()
-  const { data: buildings } = await supabase
-    .from('buildings')
-    .select('id')
-    .in('org_id', adminOrgs)
-    .is('archived_at', null)
+  const pendingPayments = payments.filter(
+    (payment) => payment.status === 'pending',
+  )
 
-  const buildingIds = (buildings ?? []).map((building) => building.id)
-  if (buildingIds.length === 0) return moderated
+  const confirmedAmount = confirmedThisMonth.reduce(
+    (sum, payment) => sum + Number(payment.amount),
+    0,
+  )
 
-  const { data: flats } = await supabase
-    .from('flats')
-    .select('id')
-    .in('building_id', buildingIds)
-    .is('archived_at', null)
+  const pendingAmount = pendingPayments.reduce(
+    (sum, payment) => sum + Number(payment.amount),
+    0,
+  )
 
-  return [...new Set([...moderated, ...(flats ?? []).map((flat) => flat.id)])]
+  return (
+    <>
+      <PageHeader
+        title="My payments"
+        description="View your payment history and payment confirmation status."
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Stat
+          label="Total payments"
+          value={String(payments.length)}
+          hint="Payments recorded from your account"
+        />
+
+        <Stat
+          label="Confirmed this month"
+          value={formatTaka(confirmedAmount)}
+          tone="paid"
+          hint={`${confirmedThisMonth.length} confirmed payment${
+            confirmedThisMonth.length === 1 ? '' : 's'
+          }`}
+        />
+
+        <Stat
+          label="Waiting for confirmation"
+          value={formatTaka(pendingAmount)}
+          tone={pendingPayments.length > 0 ? 'due' : 'paid'}
+          hint={
+            pendingPayments.length > 0
+              ? `${pendingPayments.length} payment${
+                  pendingPayments.length === 1 ? '' : 's'
+                } awaiting review`
+              : 'No pending payments'
+          }
+        />
+      </div>
+
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link
+          href="/dues"
+          className={buttonVariants({
+            variant: 'primary',
+            size: 'sm',
+          })}
+        >
+          Pay an outstanding due
+        </Link>
+
+        <Link
+          href="/dashboard"
+          className={buttonVariants({
+            variant: 'outline',
+            size: 'sm',
+          })}
+        >
+          Back to dashboard
+        </Link>
+      </div>
+
+      <section className="mt-10">
+        <h2 className="text-title text-ink">Payment history</h2>
+
+        <p className="mt-1 text-sm text-muted">
+          Payments you have submitted and their current confirmation status.
+        </p>
+
+        <div className="mt-4">
+          {payments.length === 0 ? (
+            <EmptyState
+              title="No payments yet"
+              body="When you pay an outstanding due, your payment will appear here."
+              action={
+                <Link
+                  href="/dues"
+                  className={buttonVariants({
+                    variant: 'primary',
+                    size: 'sm',
+                  })}
+                >
+                  View my dues
+                </Link>
+              }
+            />
+          ) : (
+            <PaymentHistory payments={payments} />
+          )}
+        </div>
+      </section>
+    </>
+  )
 }
 
 export default async function PaymentsPage() {
   const session = await requireSession('/payments')
+  const role = sessionRole(session)
 
+  /*
+   * Resident/member sees only their own payment history.
+   */
+  if (role === 'resident') {
+    return <ResidentPaymentsPage userId={session.userId} />
+  }
+
+  /*
+   * Moderator/admin can review payments submitted by residents.
+   */
   if (!sessionCan(session, 'payment.review')) {
     return (
       <>
-        <PageHeader title="Payments" />
+        <PageHeader
+          title="Payments"
+          description="View and manage your payment activity."
+        />
+
         <EmptyState
-          title="Not your screen"
-          body="Confirming payments is a moderator's job. Your own payments are on the My dues page."
+          title="Payments are not available"
+          body="You do not have permission to review payments for this account."
         />
       </>
     )
   }
 
   const flatIds = await reviewableFlatIds(session)
+  const scope = await listReviewScope(session).catch(() => [])
+
   const [pending, history] = await Promise.all([
     listPendingPayments(flatIds).catch(() => []),
     listPaymentsForFlats(flatIds).catch(() => []),
   ])
 
   const period = periodOf()
+
   const confirmedThisMonth = history.filter(
     (payment) =>
-      payment.status === 'confirmed' && payment.paid_at.startsWith(period.slice(0, 7)),
+      payment.status === 'confirmed' &&
+      payment.paid_at?.startsWith(period.slice(0, 7)),
   )
+
   const collected = confirmedThisMonth.reduce(
     (sum, payment) => sum + Number(payment.amount),
     0,
   )
-  const waiting = pending.reduce((sum, payment) => sum + Number(payment.amount), 0)
+
+  const waiting = pending.reduce(
+    (sum, payment) => sum + Number(payment.amount),
+    0,
+  )
 
   return (
     <>
       <PageHeader
         title="Payments"
-        description="Nothing moves on the ledger until you confirm it here."
+        description="Review resident payments and update the ledger."
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -98,15 +218,27 @@ export default async function PaymentsPage() {
           label="Waiting on you"
           value={String(pending.length)}
           tone={pending.length > 0 ? 'due' : 'paid'}
-          hint={pending.length > 0 ? `${formatTaka(waiting)} claimed` : 'Queue is clear'}
+          hint={
+            pending.length > 0
+              ? `${formatTaka(waiting)} claimed`
+              : 'Queue is clear'
+          }
         />
+
         <Stat
           label={`Collected in ${periodLabel(period)}`}
           value={formatTaka(collected)}
           tone="paid"
-          hint={`${confirmedThisMonth.length} confirmed payments`}
+          hint={`${confirmedThisMonth.length} confirmed payment${
+            confirmedThisMonth.length === 1 ? '' : 's'
+          }`}
         />
-        <Stat label="Flats you cover" value={String(flatIds.length)} />
+
+        <Stat
+          label="Flats you cover"
+          value={String(flatIds.length)}
+          hint="Moderator or admin flats"
+        />
       </div>
 
       <div className="mt-10">
@@ -115,7 +247,7 @@ export default async function PaymentsPage() {
             {
               id: 'queue',
               label: `To confirm${pending.length ? ` (${pending.length})` : ''}`,
-              content: <ReviewQueue payments={pending} />,
+              content: <ReviewQueue payments={pending} scope={scope} />,
             },
             {
               id: 'history',

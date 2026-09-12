@@ -68,6 +68,12 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateX(12px)' },
           to: { opacity: '1', transform: 'translateX(0)' },
         },
+        // The drawer travels its own width, so it reads as sliding in from
+        // off-screen rather than fading into place.
+        'drawer-in': {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(0)' },
+        },
         shimmer: { '100%': { transform: 'translateX(100%)' } },
         'meter-fill': { from: { transform: 'scaleX(0)' } },
       },
@@ -75,6 +81,7 @@ const config: Config = {
         'fade-in': 'fade-in 160ms ease-out',
         'scale-in': 'scale-in 160ms cubic-bezier(0.2, 0.8, 0.3, 1)',
         'slide-in-right': 'slide-in-right 200ms cubic-bezier(0.2, 0.8, 0.3, 1)',
+        'drawer-in': 'drawer-in 240ms cubic-bezier(0.32, 0.72, 0, 1)',
         shimmer: 'shimmer 1.6s infinite',
         'meter-fill': 'meter-fill 900ms cubic-bezier(0.16, 1, 0.3, 1) both',
       },

@@ -1,66 +1,55 @@
 'use client'
 
-import * as React from 'react'
 import Link from 'next/link'
+
 import { cn } from '@/lib/utils'
 
 /**
  * The wordmark.
  *
- * Rendered at 40px in a 72px header, with the source requested at twice
- * that so it stays sharp on a retina screen.
+ * The mark is the project's own SVG, served from /public rather than inlined.
+ * A file keeps the artwork somewhere a designer can open and replace without
+ * touching a component — which matters more here than theming it, since the
+ * mark is already drawn to sit on either background.
  *
- * Drop a file at `public/assets/logo/house-control.jpg` and it is used
- * automatically; without one, the built-in mark is drawn instead. The
- * fallback runs on the image's own `onError`, so a missing file degrades to
- * something correct rather than to a broken-image icon — and no build step or
- * environment variable is needed to switch between them.
+ * It is an <img> rather than next/image on purpose. next/image refuses SVG
+ * unless dangerouslyAllowSVG is turned on, and there is nothing for it to
+ * optimise: a vector has no resolutions to pick between. The explicit width and
+ * height are what stop the header jumping while it loads.
  */
-const LOGO_SRC = '/assets/logo/house-control.jpg'
-
 export function Logo({
   className,
   href = '/',
   showWordmark = true,
+  size = 44,
 }: {
   className?: string
   href?: string
   showWordmark?: boolean
+  /** Pixel size of the mark. The wordmark keeps its own size. */
+  size?: number
 }) {
-  const [hasImage, setHasImage] = React.useState(true)
-
   return (
     <Link
       href={href}
-      className={cn('inline-flex items-center gap-2.5 rounded-control', className)}
+      className={cn(
+        'inline-flex items-center gap-2.5 rounded-control focus-visible:ring-2',
+        className,
+      )}
       aria-label="HouseControl home"
     >
-      {hasImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={LOGO_SRC}
-          alt=""
-          width={80}
-          height={80}
-          className="size-10 rounded-control object-cover"
-          onError={() => setHasImage(false)}
-        />
-      ) : (
-        <span
-          aria-hidden
-          className="grid size-10 grid-cols-2 grid-rows-3 gap-[2px] rounded-control bg-primary p-1.5"
-        >
-          <span className="rounded-[1px] bg-primary-fg/35" />
-          <span className="rounded-[1px] bg-primary-fg/35" />
-          <span className="rounded-[1px] bg-accent" />
-          <span className="rounded-[1px] bg-primary-fg/35" />
-          <span className="rounded-[1px] bg-primary-fg/35" />
-          <span className="rounded-[1px] bg-primary-fg/35" />
-        </span>
-      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/assets/logo/mark.svg"
+        alt=""
+        width={size}
+        height={size}
+        className="shrink-0"
+        style={{ width: size, height: size }}
+      />
 
       {showWordmark && (
-        <span className="text-[1.15rem] font-semibold tracking-[-0.02em] text-ink">
+        <span className="text-lg font-semibold tracking-[-0.02em] text-ink">
           House<span className="text-muted">Control</span>
         </span>
       )}

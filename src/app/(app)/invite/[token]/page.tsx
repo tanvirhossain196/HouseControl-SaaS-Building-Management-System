@@ -1,6 +1,7 @@
 import { pageMetadata } from '@/lib/seo'
 import { requireSession } from '@/lib/auth/session'
 import { previewInvite } from '@/services/invites.service'
+import { formatTaka } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
 import { AcceptInvite } from './accept-invite'
@@ -21,18 +22,26 @@ const roleCopy: Record<string, string> = {
     'You will log visitors at the gate. No financial records are visible to this role.',
 }
 
+const roleLabel: Record<string, string> = {
+  admin: 'Admin',
+  moderator: 'Moderator',
+  member: 'Resident',
+  guard: 'Guard',
+}
+
 /**
  * Middleware sends an anonymous visitor to sign-in and back here, so by the
  * time this renders there is a session to bind the invite to.
  */
 export default async function InvitePage({ params }: { params: { token: string } }) {
-  const session = await requireSession(`/invite/${params.token}`)
+  const resolvedParams = await params
+  const session = await requireSession(`/invite/${resolvedParams.token}`)
 
   let invite: Awaited<ReturnType<typeof previewInvite>> | null = null
   let error: string | null = null
 
   try {
-    invite = await previewInvite(params.token)
+    invite = await previewInvite(resolvedParams.token)
   } catch (cause) {
     error = cause instanceof Error ? cause.message : 'This invite is not valid.'
   }
@@ -62,7 +71,7 @@ export default async function InvitePage({ params }: { params: { token: string }
         <div className="flex justify-between gap-4 px-4 py-3 text-sm">
           <dt className="text-muted">Role</dt>
           <dd>
-            <Badge tone="primary">{invite.role}</Badge>
+            <Badge tone="primary">{roleLabel[invite.role] ?? invite.role}</Badge>
           </dd>
         </div>
         {invite.flatLabel && (
@@ -73,8 +82,8 @@ export default async function InvitePage({ params }: { params: { token: string }
         )}
         {invite.rentShare !== null && (
           <div className="flex justify-between gap-4 px-4 py-3 text-sm">
-            <dt className="text-muted">Your rent share</dt>
-            <dd className="tabular font-mono text-ink">৳{invite.rentShare}</dd>
+            <dt className="text-muted">Your monthly rent share</dt>
+            <dd className="tabular font-mono text-ink">{formatTaka(invite.rentShare)}</dd>
           </div>
         )}
         <div className="flex justify-between gap-4 px-4 py-3 text-sm">
@@ -90,7 +99,7 @@ export default async function InvitePage({ params }: { params: { token: string }
             {session.email}. Sign out and sign back in with the invited address.
           </p>
         ) : (
-          <AcceptInvite token={params.token} />
+          <AcceptInvite token={resolvedParams.token} />
         )}
       </div>
     </div>

@@ -138,6 +138,11 @@ export function SiteFooter() {
               </Link>
             </li>
             <li>
+              <Link href="/refund" className="text-xs text-muted hover:text-ink">
+                Refunds
+              </Link>
+            </li>
+            <li>
               <Link href="/contact" className="text-xs text-muted hover:text-ink">
                 {t.footer.support}
               </Link>

@@ -129,7 +129,21 @@ export function NotificationBell({
             </ul>
           )}
 
-          <div className="border-t border-line px-4 py-2.5">
+          {/*
+            Two links, not one. The dropdown holds the most recent handful, so
+            there has to be a way to the rest — and the preferences page answers
+            a different question entirely: not "what happened" but "what should
+            reach me".
+          */}
+          <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5">
+            <Link
+              href="/notifications"
+              onClick={() => setOpen(false)}
+              className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+            >
+              See all
+            </Link>
+
             <Link
               href="/settings/notifications"
               onClick={() => setOpen(false)}

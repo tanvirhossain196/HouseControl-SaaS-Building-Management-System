@@ -16,8 +16,8 @@ const roles = [
 ] as const
 
 /**
- * Until Phase 11 sends the email, the link is shown once so an owner can send
- * it by WhatsApp. It is not stored anywhere in readable form — only its hash.
+ * Creates an invite link and sends an email notification to the recipient.
+ * The raw link is shown once so an owner can also share it manually via WhatsApp.
  */
 export function InviteForm({
   orgId,
@@ -41,12 +41,22 @@ export function InviteForm({
     event.preventDefault()
     if (pending) return
 
-    const data = Object.fromEntries(new FormData(event.currentTarget))
+    const formData = new FormData(event.currentTarget)
+    const rawData = Object.fromEntries(formData)
+
+    // Clean up empty optional strings so Zod validation passes smoothly
+    const payload = {
+      ...rawData,
+      orgId,
+      flatId: rawData.flatId || undefined,
+      rentShare: rawData.rentShare ? rawData.rentShare : undefined,
+    }
+
     setPending(true)
     setError(null)
     setFields({})
 
-    const result = await inviteMember({ ...data, orgId })
+    const result = await inviteMember(payload)
     setPending(false)
 
     if (!result.ok) {
@@ -57,10 +67,12 @@ export function InviteForm({
 
     setLink(result.data.link)
     formRef.current?.reset()
+    setRole('member') // Reset state to default
+
     toast({
       tone: 'success',
-      title: 'Invite created',
-      body: 'Copy the link and send it.',
+      title: 'Invite created & sent',
+      body: 'An email has been sent. You can also copy the link manually below.',
     })
   }
 
@@ -119,6 +131,7 @@ export function InviteForm({
             <Field
               label="Rent share"
               htmlFor="rentShare"
+              error={fields.rentShare?.[0]}
               hint="Their part of the flat's rent. Shares must add up to the total."
             >
               <Input
@@ -139,7 +152,7 @@ export function InviteForm({
       {link && (
         <div className="rounded-control border border-paid/30 bg-paid-soft p-4">
           <p className="text-sm font-medium text-ink">
-            Send this link. It works once, for 7 days.
+            Invite link generated! It works once, for 7 days.
           </p>
           <div className="mt-3 flex gap-2">
             <Input

@@ -14,10 +14,17 @@
     --muted: 89 98 122;
     --line: 224 228 238;
 
-    /* Brand: deep indigo carries authority, amber carries urgency */
-    --primary: 47 75 216;
+    /*
+     * Brand: a true blue, not an indigo.
+     *
+     * The old 47 75 216 leaned violet, which reads as a consumer app. This is
+     * the blue of a bank statement — authority without decoration — and it
+     * holds AA contrast on white at body sizes. Amber still carries urgency,
+     * because nothing else in the palette can.
+     */
+    --primary: 20 86 214;
     --primary-fg: 255 255 255;
-    --primary-soft: 232 236 252;
+    --primary-soft: 228 237 252;
 
     --accent: 214 145 8;
     --accent-fg: 34 24 0;
@@ -36,17 +43,30 @@
   }
 
   .dark {
-    --paper: 8 15 34;
-    --surface: 15 24 48;
-    --raised: 21 32 62;
+    /*
+     * Navy, deepening toward the edges.
+     *
+     * paper is the page, surface is a panel lifted off it, raised is a control
+     * lifted off that. Each step is a little lighter and a little bluer, so
+     * depth is carried by the surfaces themselves rather than by borders — on a
+     * dark screen a hairline is nearly invisible and a shadow is worse.
+     */
+    --paper: 7 14 31;
+    --surface: 13 23 46;
+    --raised: 20 33 63;
 
-    --ink: 232 236 247;
-    --muted: 154 165 192;
-    --line: 32 45 82;
+    --ink: 233 238 250;
+    --muted: 150 164 194;
+    --line: 30 45 84;
 
-    --primary: 124 148 255;
-    --primary-fg: 8 15 34;
-    --primary-soft: 26 40 84;
+    /*
+     * Brighter on dark, because the same blue that reads as authoritative on
+     * white disappears against navy. Foreground stays near-black: a bright
+     * enough blue needs dark text on it, not white.
+     */
+    --primary: 74 143 255;
+    --primary-fg: 6 14 32;
+    --primary-soft: 21 44 92;
 
     --accent: 245 180 59;
     --accent-fg: 30 21 0;
@@ -74,7 +94,9 @@
 
   body {
     @apply bg-paper text-ink antialiased;
-    font-feature-settings: 'cv05' 1, 'ss01' 1;
+    font-feature-settings:
+      'cv05' 1,
+      'ss01' 1;
     text-rendering: optimizeLegibility;
   }
 

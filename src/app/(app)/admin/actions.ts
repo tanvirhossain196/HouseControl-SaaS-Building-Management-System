@@ -8,8 +8,14 @@ import {
   archiveBuilding,
   createBuilding,
   getBuilding,
+  previewBuildingArchive,
   updateBuilding,
+  type ArchiveBuildingSummary,
 } from '@/services/buildings.service'
+import {
+  moveBuildingResidents,
+  type BuildingMoveResult,
+} from '@/services/residents.service'
 import {
   archiveFlat,
   bulkCreateFlats,
@@ -94,13 +100,39 @@ export async function updateBuildingAction(
 
 export async function archiveBuildingAction(
   buildingId: string,
-): Promise<ActionResult<null>> {
+): Promise<ActionResult<ArchiveBuildingSummary>> {
   try {
     const building = await getBuilding(buildingId)
     const session = await assertPermission('building.archive', { orgId: building.org_id })
-    await archiveBuilding(session.userId, buildingId)
+
+    const summary = await archiveBuilding(session.userId, buildingId)
+
     revalidatePath('/admin')
-    return { ok: true, data: null }
+    revalidatePath('/control')
+    revalidatePath('/flats')
+    revalidatePath('/dashboard')
+
+    return { ok: true, data: summary }
+  } catch (error) {
+    return failed(error)
+  }
+}
+
+/**
+ * What closing this building would affect.
+ *
+ * Read separately so the confirmation dialog can show real numbers before
+ * anything happens, rather than asking someone to agree to consequences they
+ * are only told about afterwards.
+ */
+export async function previewBuildingArchiveAction(
+  buildingId: string,
+): Promise<ActionResult<ArchiveBuildingSummary>> {
+  try {
+    const building = await getBuilding(buildingId)
+    await assertPermission('building.archive', { orgId: building.org_id })
+
+    return { ok: true, data: await previewBuildingArchive(buildingId) }
   } catch (error) {
     return failed(error)
   }
@@ -213,6 +245,45 @@ export async function recordLandlordRentAction(
     await recordLandlordRent(session.userId, parsed.data)
     revalidatePath(`/admin/buildings/${buildingId}`)
     return { ok: true, data: null }
+  } catch (error) {
+    return failed(error)
+  }
+}
+
+/**
+ * Empties one building into another before it is closed.
+ *
+ * Permission is asserted on both organizations. Being able to close a building
+ * does not entitle you to put its residents anywhere you like — the
+ * destination has to be somewhere you could have invited them to in the first
+ * place.
+ */
+export async function moveBuildingResidentsAction(
+  buildingId: string,
+  targetBuildingId: string,
+): Promise<ActionResult<BuildingMoveResult>> {
+  try {
+    const [source, target] = await Promise.all([
+      getBuilding(buildingId),
+      getBuilding(targetBuildingId),
+    ])
+
+    const session = await assertPermission('building.archive', { orgId: source.org_id })
+    await assertPermission('resident.invite', { orgId: target.org_id })
+
+    const result = await moveBuildingResidents(
+      session.userId,
+      buildingId,
+      targetBuildingId,
+    )
+
+    revalidatePath('/admin')
+    revalidatePath('/control')
+    revalidatePath('/admin/residents')
+    revalidatePath(`/admin/buildings/${buildingId}`)
+    revalidatePath(`/admin/buildings/${targetBuildingId}`)
+
+    return { ok: true, data: result }
   } catch (error) {
     return failed(error)
   }

@@ -4,12 +4,16 @@ import { ChevronLeft, LayoutGrid, Pencil, Plus } from 'lucide-react'
 import { pageMetadata } from '@/lib/seo'
 import { assertPermission } from '@/lib/auth/guards'
 import { getBuilding } from '@/services/buildings.service'
+import { createServerSupabase } from '@/lib/supabase/server'
 import { listFlatsWithCounts } from '@/services/flats.service'
+import { listBuildingRemittances } from '@/services/remittances.service'
 import { formatTaka } from '@/lib/utils'
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Stat } from '@/components/dashboard/stat'
 import { BillMonth } from '@/components/money/bill-month'
+import { CloseBuildingButton } from '@/components/property/close-building-button'
+import { HandoverSchedule } from '@/components/money/handover-schedule'
 import { BuildingForm } from '@/components/property/building-form'
 import { FlatForm } from '@/components/property/flat-form'
 import { BulkFlatsForm } from '@/components/property/bulk-flats-form'
@@ -30,7 +34,26 @@ export default async function BuildingPage({ params }: { params: { id: string } 
   // Permission is scoped to this building's organization, not "anywhere".
   await assertPermission('building.edit', { orgId: building.org_id })
 
-  const flats = await listFlatsWithCounts(building.id).catch(() => [])
+  /**
+   * Other live buildings in the same organization.
+   *
+   * Offered as somewhere to move residents before this one is closed. Excludes
+   * itself, since moving people into the building being shut is not a plan.
+   */
+  const { data: siblings } = await createServerSupabase()
+    .from('buildings')
+    .select('id, name')
+    .eq('org_id', building.org_id)
+    .is('archived_at', null)
+    .neq('id', building.id)
+    .order('name')
+
+  const moveTargets = siblings ?? []
+
+  const [flats, handovers] = await Promise.all([
+    listFlatsWithCounts(building.id).catch(() => []),
+    listBuildingRemittances(building.id).catch(() => []),
+  ])
 
   const occupied = flats.filter((flat) => flat.occupancy_status === 'occupied').length
   const monthlyRent = flats
@@ -62,6 +85,12 @@ export default async function BuildingPage({ params }: { params: { id: string } 
               }
             />
             <BillMonth scope="building" id={building.id} label={building.name} />
+
+            <CloseBuildingButton
+              buildingId={building.id}
+              buildingName={building.name}
+              moveTargets={moveTargets}
+            />
             <BulkFlatsForm
               buildingId={building.id}
               floorsCount={building.floors_count}
@@ -131,6 +160,18 @@ export default async function BuildingPage({ params }: { params: { id: string } 
             </p>
             <div className="mt-4">
               <UnitGrid flats={flats} />
+            </div>
+          </section>
+
+          <section className="mt-10">
+            <h2 className="text-title text-ink">Handover schedule</h2>
+            <p className="mt-1 max-w-[62ch] text-sm leading-relaxed text-muted">
+              What each moderator owes you for the flats they cover, and the date you
+              expect it by. Change a date here rather than re-billing the month — billing
+              again would raise nothing new.
+            </p>
+            <div className="mt-4">
+              <HandoverSchedule rows={handovers} buildingId={building.id} />
             </div>
           </section>
 

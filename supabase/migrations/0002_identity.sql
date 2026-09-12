@@ -119,8 +119,9 @@ create trigger subscriptions_set_updated_at
   for each row execute function set_updated_at();
 
 -- ---------------------------------------------------------------------------
--- invites: the only way a person joins a building. Tokens are stored hashed,
--- never in plain text, and expire.
+-- invites: the only way a person joins a building. The hash is used for secure
+-- lookup, while the raw token is retained so the inviter can copy the link
+-- again from the resident/invite list.
 -- ---------------------------------------------------------------------------
 create table invites (
   id           uuid primary key default gen_random_uuid(),
@@ -129,6 +130,7 @@ create table invites (
   email        citext not null,
   role         app_role not null check (role in ('admin', 'moderator', 'member', 'guard')),
   rent_share   numeric(12, 2) check (rent_share is null or rent_share >= 0),
+  token        text not null unique,
   token_hash   text not null unique,
   invited_by   uuid not null references profiles (id) on delete cascade,
   expires_at   timestamptz not null,

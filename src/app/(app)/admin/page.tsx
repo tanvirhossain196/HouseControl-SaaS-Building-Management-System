@@ -6,6 +6,7 @@ import { listBuildingsWithCounts } from '@/services/buildings.service'
 import { PageHeader, EmptyState } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { CloseBuildingButton } from '@/components/property/close-building-button'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { BuildingForm } from '@/components/property/building-form'
 
@@ -65,44 +66,64 @@ export default async function AdminBuildingsPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {buildings.map((building) => (
-            <Link
-              key={building.id}
-              href={`/admin/buildings/${building.id}`}
-              className="rounded-panel focus-visible:outline-none"
-            >
-              <Card interactive className="h-full">
-                <CardContent className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="font-semibold text-ink">{building.name}</p>
-                    <Badge tone="neutral">{building.floors_count} floors</Badge>
-                  </div>
-                  <p className="text-sm text-muted">
-                    {building.address_line}
-                    {building.area ? `, ${building.area}` : ''}, {building.city}
-                  </p>
-                  <div className="flex gap-4 border-t border-line pt-3">
-                    <span className="text-xs text-muted">
-                      <span className="tabular block font-mono text-base text-ink">
-                        {building.units}
+            /*
+              The close control sits outside the card's Link, not inside it.
+              A button nested in a link is two hit targets fighting for the same
+              press, and on a phone the link usually wins — which would open the
+              building instead of the dialog.
+            */
+            <div key={building.id} className="relative">
+              <Link
+                href={`/admin/buildings/${building.id}`}
+                className="block rounded-panel focus-visible:outline-none"
+              >
+                <Card interactive className="h-full">
+                  <CardContent className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-semibold text-ink">{building.name}</p>
+                      <Badge tone="neutral" className="mr-8">
+                        {building.floors_count} floors
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted">
+                      {building.address_line}
+                      {building.area ? `, ${building.area}` : ''}, {building.city}
+                    </p>
+                    <div className="flex gap-4 border-t border-line pt-3">
+                      <span className="text-xs text-muted">
+                        <span className="tabular block font-mono text-base text-ink">
+                          {building.units}
+                        </span>
+                        units
                       </span>
-                      units
-                    </span>
-                    <span className="text-xs text-muted">
-                      <span className="tabular block font-mono text-base text-paid">
-                        {building.occupied}
+                      <span className="text-xs text-muted">
+                        <span className="tabular block font-mono text-base text-paid">
+                          {building.occupied}
+                        </span>
+                        occupied
                       </span>
-                      occupied
-                    </span>
-                    <span className="text-xs text-muted">
-                      <span className="tabular block font-mono text-base text-ink">
-                        {building.vacant}
+                      <span className="text-xs text-muted">
+                        <span className="tabular block font-mono text-base text-ink">
+                          {building.vacant}
+                        </span>
+                        vacant
                       </span>
-                      vacant
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <div className="absolute right-3 top-3">
+                <CloseBuildingButton
+                  buildingId={building.id}
+                  buildingName={building.name}
+                  moveTargets={buildings
+                    .filter((other) => other.id !== building.id)
+                    .map((other) => ({ id: other.id, name: other.name }))}
+                  compact
+                />
+              </div>
+            </div>
           ))}
         </div>
       )}

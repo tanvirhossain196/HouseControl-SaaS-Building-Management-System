@@ -7,12 +7,13 @@ import { setUpBuildingAction } from './actions'
 import { planUnits } from '@/lib/units'
 import { useNumberField } from '@/hooks/use-number-field'
 import { limitsFor } from '@/lib/pricing'
-
-const FREE_UNITS = limitsFor('free').units
 import { Button } from '@/components/ui/button'
 import { Field, Input, Select } from '@/components/ui/input'
 import { FormError } from '@/components/auth/form-error'
 import { useToast } from '@/components/providers/toast-provider'
+
+/** Whatever the Free plan currently allows — never a number typed by hand. */
+const FREE_UNITS = limitsFor('free').units
 
 /**
  * The first screen an owner sees.
@@ -233,8 +234,10 @@ export function SetupForm() {
 
               {overFreeLimit && (
                 <p className="mt-2 text-xs leading-relaxed text-muted">
-                  The Free plan covers 12 units, so the first 12 are created now. Upgrade
-                  to Pro and generate the rest from the building page — nothing is lost.
+                  The Free plan covers {FREE_UNITS} unit
+                  {FREE_UNITS === 1 ? '' : 's'}, so the first {FREE_UNITS} are created
+                  now. Upgrade to Plus or Pro and generate the rest from the building
+                  page — nothing is lost.
                 </p>
               )}
             </div>

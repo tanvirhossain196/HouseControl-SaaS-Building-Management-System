@@ -1,35 +1,27 @@
 import 'server-only'
 
 import { AppError } from '@/lib/errors'
-import { newTransactionId, verifyIpnSignature, type IpnPayload } from './signature'
+import {
+  newTransactionId,
+  verifyIpnSignature,
+  type IpnPayload,
+} from './signature'
 
 export { newTransactionId, verifyIpnSignature }
 export type { IpnPayload }
 
-/**
- * SSLCommerz.
- *
- * Three things happen here and they are deliberately separate:
- *
- *   1. `startSession` asks the gateway for a checkout URL.
- *   2. `verifyIpnSignature` checks that an incoming IPN really came from
- *      SSLCommerz and was not altered on the way.
- *   3. `validateTransaction` asks SSLCommerz directly what it thinks happened.
- *
- * Step 2 alone is not enough. A signature proves the message is authentic, not
- * that the payment succeeded — a replayed or partially-crafted callback can
- * carry a valid signature for the wrong facts. Nothing is confirmed until
- * step 3 agrees, from a request we made ourselves.
- */
-
 const SANDBOX = {
-  session: 'https://sandbox.sslcommerz.com/gwprocess/v4/api.php',
-  validation: 'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php',
+  session:
+    'https://sandbox.sslcommerz.com/gwprocess/v4/api.php',
+  validation:
+    'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php',
 }
 
 const LIVE = {
-  session: 'https://securepay.sslcommerz.com/gwprocess/v4/api.php',
-  validation: 'https://securepay.sslcommerz.com/validator/api/validationserverAPI.php',
+  session:
+    'https://securepay.sslcommerz.com/gwprocess/v4/api.php',
+  validation:
+    'https://securepay.sslcommerz.com/validator/api/validationserverAPI.php',
 }
 
 export type SslConfig = {
@@ -40,7 +32,8 @@ export type SslConfig = {
 
 export function sslConfig(): SslConfig {
   const storeId = process.env.SSLCOMMERZ_STORE_ID
-  const storePassword = process.env.SSLCOMMERZ_STORE_PASSWORD
+  const storePassword =
+    process.env.SSLCOMMERZ_STORE_PASSWORD
 
   if (!storeId || !storePassword) {
     throw new AppError(
@@ -56,7 +49,9 @@ export function sslConfig(): SslConfig {
   }
 }
 
-const endpoints = (config: SslConfig) => (config.sandbox ? SANDBOX : LIVE)
+function endpoints(config: SslConfig) {
+  return config.sandbox ? SANDBOX : LIVE
+}
 
 export type CheckoutRequest = {
   transactionId: string
@@ -65,17 +60,40 @@ export type CheckoutRequest = {
   customerEmail: string
   customerPhone: string
   productName: string
+  productCategory?: string
   successUrl: string
   failUrl: string
   cancelUrl: string
   ipnUrl: string
 }
 
-/** Asks SSLCommerz for a hosted checkout URL to send the resident to. */
+/**
+ * Starts a hosted SSLCommerz checkout session.
+ *
+ * The browser never sends the payable amount directly. The server creates
+ * this request from a trusted due or subscription quote.
+ */
 export async function startSession(
   request: CheckoutRequest,
   config: SslConfig = sslConfig(),
-): Promise<{ redirectUrl: string; sessionKey: string }> {
+): Promise<{
+  redirectUrl: string
+  sessionKey: string
+}> {
+  if (!Number.isFinite(request.amount) || request.amount <= 0) {
+    throw new AppError(
+      'bad_request',
+      'Payment amount must be greater than zero.',
+    )
+  }
+
+  if (!request.transactionId.trim()) {
+    throw new AppError(
+      'bad_request',
+      'Payment transaction id is required.',
+    )
+  }
+
   const body = new URLSearchParams({
     store_id: config.storeId,
     store_passwd: config.storePassword,
@@ -86,24 +104,38 @@ export async function startSession(
     fail_url: request.failUrl,
     cancel_url: request.cancelUrl,
     ipn_url: request.ipnUrl,
-    cus_name: request.customerName,
-    cus_email: request.customerEmail,
-    cus_phone: request.customerPhone,
+    cus_name: request.customerName || 'HouseControl customer',
+    cus_email:
+      request.customerEmail || 'customer@example.com',
+    cus_phone: request.customerPhone || '01700000000',
     cus_add1: 'N/A',
     cus_city: 'Dhaka',
     cus_country: 'Bangladesh',
     shipping_method: 'NO',
-    product_name: request.productName,
-    product_category: 'Rent',
+    product_name: request.productName || 'HouseControl payment',
+    product_category:
+      request.productCategory || 'Service',
     product_profile: 'non-physical-goods',
   })
 
-  const response = await fetch(endpoints(config).session, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
-    cache: 'no-store',
-  })
+  let response: Response
+
+  try {
+    response = await fetch(endpoints(config).session, {
+      method: 'POST',
+      headers: {
+        'Content-Type':
+          'application/x-www-form-urlencoded',
+      },
+      body,
+      cache: 'no-store',
+    })
+  } catch {
+    throw new AppError(
+      'internal_error',
+      'The payment gateway could not be reached. Try again.',
+    )
+  }
 
   if (!response.ok) {
     throw new AppError(
@@ -112,21 +144,37 @@ export async function startSession(
     )
   }
 
-  const result = (await response.json()) as {
+  let result: {
     status?: string
     GatewayPageURL?: string
     sessionkey?: string
     failedreason?: string
   }
 
-  if (result.status !== 'SUCCESS' || !result.GatewayPageURL) {
+  try {
+    result = (await response.json()) as typeof result
+  } catch {
     throw new AppError(
       'internal_error',
-      result.failedreason ?? 'The payment gateway refused to start a session.',
+      'The payment gateway returned an invalid response.',
     )
   }
 
-  return { redirectUrl: result.GatewayPageURL, sessionKey: result.sessionkey ?? '' }
+  if (
+    result.status !== 'SUCCESS' ||
+    !result.GatewayPageURL
+  ) {
+    throw new AppError(
+      'internal_error',
+      result.failedreason ??
+        'The payment gateway refused to start a session.',
+    )
+  }
+
+  return {
+    redirectUrl: result.GatewayPageURL,
+    sessionKey: result.sessionkey ?? '',
+  }
 }
 
 export type ValidationResult = {
@@ -141,21 +189,45 @@ export type ValidationResult = {
 }
 
 /**
- * Asks SSLCommerz what actually happened, using the validation id from the
- * callback. This is the answer we trust — the callback only tells us to go
- * and look.
+ * Validates a transaction directly with SSLCommerz.
+ *
+ * A callback alone is never trusted as final payment confirmation.
  */
 export async function validateTransaction(
   validationId: string,
   config: SslConfig = sslConfig(),
 ): Promise<ValidationResult> {
-  const url = new URL(endpoints(config).validation)
+  if (!validationId.trim()) {
+    throw new AppError(
+      'bad_request',
+      'Validation id is required.',
+    )
+  }
+
+  const url = new URL(
+    endpoints(config).validation,
+  )
+
   url.searchParams.set('val_id', validationId)
   url.searchParams.set('store_id', config.storeId)
-  url.searchParams.set('store_passwd', config.storePassword)
+  url.searchParams.set(
+    'store_passwd',
+    config.storePassword,
+  )
   url.searchParams.set('format', 'json')
 
-  const response = await fetch(url, { cache: 'no-store' })
+  let response: Response
+
+  try {
+    response = await fetch(url, {
+      cache: 'no-store',
+    })
+  } catch {
+    throw new AppError(
+      'internal_error',
+      'Could not reach the gateway to validate the payment.',
+    )
+  }
 
   if (!response.ok) {
     throw new AppError(
@@ -164,25 +236,42 @@ export async function validateTransaction(
     )
   }
 
-  const result = (await response.json()) as {
+  let result: {
     status?: string
-    amount?: string
+    amount?: string | number
     currency?: string
     tran_id?: string
     bank_tran_id?: string
     card_type?: string
   }
 
-  // VALID means captured; VALIDATED means captured and already validated once.
+  try {
+    result = (await response.json()) as typeof result
+  } catch {
+    throw new AppError(
+      'internal_error',
+      'The gateway returned an invalid validation response.',
+    )
+  }
+
   const status = result.status ?? 'UNKNOWN'
+  const amount = Number(result.amount ?? 0)
+  const currency = result.currency ?? 'BDT'
 
   return {
-    valid: status === 'VALID' || status === 'VALIDATED',
+    valid:
+      (status === 'VALID' ||
+        status === 'VALIDATED') &&
+      Number.isFinite(amount) &&
+      amount > 0 &&
+      currency.toUpperCase() === 'BDT',
+
     status,
-    amount: Number(result.amount ?? 0),
-    currency: result.currency ?? 'BDT',
+    amount,
+    currency,
     transactionId: result.tran_id ?? '',
-    bankTransactionId: result.bank_tran_id ?? null,
+    bankTransactionId:
+      result.bank_tran_id ?? null,
     cardType: result.card_type ?? null,
     raw: result,
   }

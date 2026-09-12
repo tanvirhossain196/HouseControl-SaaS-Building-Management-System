@@ -44,12 +44,17 @@ function siteUrl(path: string) {
 }
 
 /** Brute-force guard: 5 attempts per identifier per 15 minutes. */
-function throttle<T>(
+async function throttle<T>(
   scope: string,
   identifier: string,
-): Extract<Result<T>, { ok: false }> | null {
-  const perIdentifier = rateLimit(`${scope}:${identifier}`, 5, 15 * 60_000)
-  const perIp = rateLimit(`${scope}:ip:${clientIp()}`, 20, 15 * 60_000)
+): Promise<Extract<Result<T>, { ok: false }> | null> {
+  // Both counts in one round trip rather than one after the other: this runs
+  // before every sign-in attempt, and two sequential calls to Redis would be
+  // felt on a slow connection.
+  const [perIdentifier, perIp] = await Promise.all([
+    rateLimit(`${scope}:${identifier}`, 5, 15 * 60_000),
+    rateLimit(`${scope}:ip:${clientIp()}`, 20, 15 * 60_000),
+  ])
 
   if (!perIdentifier.allowed || !perIp.allowed) {
     return { ok: false, error: 'Too many attempts. Wait 15 minutes and try again.' }
@@ -101,7 +106,7 @@ export async function signUpWithPassword(
   const parsed = signUpSchema.safeParse(input)
   if (!parsed.success) return invalid(parsed.error)
 
-  const limited = throttle('signup', parsed.data.email)
+  const limited = await throttle('signup', parsed.data.email)
   if (limited) return limited
 
   const supabase = createServerSupabase()
@@ -144,7 +149,7 @@ export async function signInWithPassword(input: unknown): Promise<Result> {
   const parsed = signInSchema.safeParse(input)
   if (!parsed.success) return invalid(parsed.error)
 
-  const limited = throttle('signin', parsed.data.email)
+  const limited = await throttle('signin', parsed.data.email)
   if (limited) return limited
 
   const supabase = createServerSupabase()
@@ -181,7 +186,7 @@ export async function sendMagicLink(input: unknown): Promise<Result<{ email: str
   const parsed = magicLinkSchema.safeParse(input)
   if (!parsed.success) return invalid(parsed.error)
 
-  const limited = throttle('magiclink', parsed.data.email)
+  const limited = await throttle('magiclink', parsed.data.email)
   if (limited) return limited
 
   const supabase = createServerSupabase()
@@ -207,7 +212,7 @@ export async function requestPasswordReset(
   const parsed = forgotPasswordSchema.safeParse(input)
   if (!parsed.success) return invalid(parsed.error)
 
-  const limited = throttle('reset', parsed.data.email)
+  const limited = await throttle('reset', parsed.data.email)
   if (limited) return limited
 
   const supabase = createServerSupabase()
@@ -235,7 +240,7 @@ export async function verifyResetCode(input: unknown): Promise<Result> {
   const parsed = resetCodeSchema.safeParse(input)
   if (!parsed.success) return invalid(parsed.error)
 
-  const limited = throttle('reset-code', parsed.data.email)
+  const limited = await throttle('reset-code', parsed.data.email)
   if (limited) return limited
 
   const supabase = createServerSupabase()
@@ -302,7 +307,7 @@ export async function sendPhoneOtp(input: unknown): Promise<Result<{ phone: stri
   if (!parsed.success) return invalid(parsed.error)
 
   const user = await requireUser()
-  const limited = throttle('phone-otp', user.id)
+  const limited = await throttle('phone-otp', user.id)
   if (limited) return limited
 
   const supabase = createServerSupabase()
@@ -326,7 +331,7 @@ export async function verifyPhoneOtp(input: unknown): Promise<Result> {
   if (!parsed.success) return invalid(parsed.error)
 
   const user = await requireUser()
-  const limited = throttle('phone-verify', user.id)
+  const limited = await throttle('phone-verify', user.id)
   if (limited) return limited
 
   const supabase = createServerSupabase()

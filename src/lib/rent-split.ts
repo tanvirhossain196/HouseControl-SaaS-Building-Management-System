@@ -1,9 +1,9 @@
 /**
  * Rent splitting.
  *
- * A flat's rent is one number; the people living in it pay parts of it. The
- * parts must add up exactly — a flat billed 24,500 must never produce three
- * dues of 8,166.66 that quietly lose two paisa a month.
+ * A flat's rent is one number; the people living in it pay parts of it.
+ * Active allocations may be partial while the moderator is inviting people,
+ * but they must never exceed the flat's rent.
  *
  * Money is handled in paisa (integers) inside these functions and converted
  * back at the edges, because 0.1 + 0.2 is not 0.3 in binary floating point.
@@ -95,6 +95,30 @@ export function checkShares(shares: number[], flatRent: number): ShareCheck {
       difference > 0
         ? `Shares are over the flat rent by ৳${Math.abs(difference).toLocaleString('en-BD')}.`
         : `Shares are short of the flat rent by ৳${Math.abs(difference).toLocaleString('en-BD')}.`,
+  }
+}
+
+/**
+ * Validates a partial allocation.
+ *
+ * This is used while a moderator assigns rent gradually. A shortfall is valid
+ * and becomes the remaining amount shown by the UI; only an excess is invalid.
+ */
+export function checkShareCapacity(shares: number[], flatRent: number): ShareCheck {
+  const totalPaisa = shares.reduce((sum, share) => sum + toPaisa(share), 0)
+  const rentPaisa = toPaisa(flatRent)
+  const total = toTaka(totalPaisa)
+
+  if (totalPaisa <= rentPaisa) {
+    return { ok: true, total }
+  }
+
+  const difference = toTaka(totalPaisa - rentPaisa)
+  return {
+    ok: false,
+    total,
+    difference,
+    message: `Shares are over the flat rent by ৳${Math.abs(difference).toLocaleString('en-BD')}.`,
   }
 }
 

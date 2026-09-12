@@ -19,6 +19,19 @@ import { site } from '@/lib/site'
  * development machine runs the whole app without a mail account.
  */
 
+/**
+ * A file to send along with the message.
+ *
+ * `content` is raw bytes rather than base64 because that is what pdf-lib hands
+ * back and what nodemailer wants; the base64 encoding Resend needs is done at
+ * the last moment, in the one place that needs it.
+ */
+export type EmailAttachment = {
+  filename: string
+  content: Uint8Array
+  contentType?: string
+}
+
 export type SendResult =
   | { status: 'sent'; providerId: string }
   | { status: 'skipped'; reason: string }
@@ -29,6 +42,7 @@ export async function sendEmail(input: {
   subject: string
   html: string
   text: string
+  attachments?: EmailAttachment[]
 }): Promise<SendResult> {
   if (process.env.SMTP_HOST) {
     return sendOverSmtp(input)
@@ -39,7 +53,12 @@ export async function sendEmail(input: {
 
   if (!apiKey) {
     if (process.env.NODE_ENV !== 'production') {
-      console.info(`[email] would send "${input.subject}" to ${input.to}`)
+      const files = input.attachments?.length
+        ? ` with ${input.attachments.map((file) => file.filename).join(', ')}`
+        : ''
+      console.info(
+        `[email] would send "${input.subject}" to ${input.to}${files}`,
+      )
     }
     return { status: 'skipped', reason: 'RESEND_API_KEY is not set' }
   }
@@ -57,6 +76,15 @@ export async function sendEmail(input: {
         subject: input.subject,
         html: input.html,
         text: input.text,
+        // Resend takes attachments as base64 strings.
+        ...(input.attachments?.length
+          ? {
+              attachments: input.attachments.map((file) => ({
+                filename: file.filename,
+                content: Buffer.from(file.content).toString('base64'),
+              })),
+            }
+          : {}),
       }),
       cache: 'no-store',
     })
@@ -90,11 +118,35 @@ export async function sendEmail(input: {
 export function renderEmail(input: {
   title: string
   body: string
+  /**
+   * Optional label/value rows, rendered as a quiet table under the body.
+   *
+   * Receipts, invoices and confirmations all want the same thing: the figures
+   * laid out where they can be scanned, not buried in a paragraph. Passing
+   * them as data rather than as HTML keeps every value escaped.
+   */
+  details?: Array<{ label: string; value: string; strong?: boolean }>
   actionLabel?: string
   actionUrl?: string
   footnote?: string
 }): { html: string; text: string } {
   const url = input.actionUrl ? new URL(input.actionUrl, site.url).toString() : null
+
+  const detailRows = (input.details ?? [])
+    .map(
+      (row) =>
+        `<tr>
+          <td style="padding:7px 0;font-size:13px;color:#59627a">${escapeHtml(row.label)}</td>
+          <td style="padding:7px 0;font-size:13px;text-align:right;${
+            row.strong ? 'font-weight:600;color:#131a2b' : 'color:#131a2b'
+          }">${escapeHtml(row.value)}</td>
+        </tr>`,
+    )
+    .join('')
+
+  const detailsBlock = detailRows
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 22px;border-top:1px solid #e0e4ee;border-bottom:1px solid #e0e4ee">${detailRows}</table>`
+    : ''
 
   const html = `<!doctype html>
 <html lang="en"><body style="margin:0;padding:24px;background:#f6f7fb;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#131a2b">
@@ -102,6 +154,7 @@ export function renderEmail(input: {
     <p style="margin:0 0 20px;font-size:15px;font-weight:600;letter-spacing:-0.01em">House<span style="color:#59627a">Control</span></p>
     <h1 style="margin:0 0 12px;font-size:19px;line-height:1.3;font-weight:600">${escapeHtml(input.title)}</h1>
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#59627a">${escapeHtml(input.body)}</p>
+    ${detailsBlock}
     ${
       url
         ? `<a href="${url}" style="display:inline-block;background:#2f4bd8;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:9px;font-size:14px;font-weight:500">${escapeHtml(input.actionLabel ?? 'Open HouseControl')}</a>`
@@ -122,6 +175,9 @@ export function renderEmail(input: {
     input.title,
     '',
     input.body,
+    ...(input.details?.length
+      ? ['', ...input.details.map((row) => `${row.label}: ${row.value}`)]
+      : []),
     url ? `\n${url}` : '',
     input.footnote ? `\n${input.footnote}` : '',
     '',
@@ -155,6 +211,7 @@ async function sendOverSmtp(input: {
   subject: string
   html: string
   text: string
+  attachments?: EmailAttachment[]
 }): Promise<SendResult> {
   const host = process.env.SMTP_HOST
   const user = process.env.SMTP_USER
@@ -186,6 +243,11 @@ async function sendOverSmtp(input: {
       subject: input.subject,
       text: input.text,
       html: input.html,
+      attachments: input.attachments?.map((file) => ({
+        filename: file.filename,
+        content: Buffer.from(file.content),
+        contentType: file.contentType ?? 'application/octet-stream',
+      })),
     })
 
     return { status: 'sent', providerId: result.messageId }

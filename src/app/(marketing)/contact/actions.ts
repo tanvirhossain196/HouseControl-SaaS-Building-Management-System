@@ -31,7 +31,7 @@ export async function submitEnquiry(input: unknown): Promise<ActionResult<null>>
   const ip = forwarded?.split(',')[0]?.trim() ?? 'unknown'
 
   // A public form with no session needs its own brake.
-  const limit = rateLimit(`contact:${ip}`, 5, 15 * 60_000)
+  const limit = await rateLimit(`contact:${ip}`, 5, 15 * 60_000)
   if (!limit.allowed) {
     return {
       ok: false,

@@ -2,114 +2,139 @@ import type { Permission, RoleKey } from './permissions'
 
 export type NavItem = {
   label: string
-  /** Bangla label, shown when the interface is set to Bangla. */
   labelBn?: string
   href: string
-  /** Lucide icon name, resolved in the sidebar. */
   icon?: string
-  /** Hidden unless the person holds this permission. */
   permission?: Permission
-  /** Shown to these roles only. Omit for all. */
   roles?: RoleKey[]
-  /** Marks a screen that arrives in a later phase. */
   soon?: boolean
 }
 
-export type NavSection = { heading: string; items: NavItem[] }
+export type NavSection = {
+  heading: string
+  items: NavItem[]
+}
 
-/**
- * One navigation tree, filtered per role. A resident and an owner see
- * different sidebars because the filter removes what they cannot use, not
- * because there are four hand-written menus to keep in sync.
- */
 export const navigation: NavSection[] = [
   {
     heading: 'Overview',
     items: [
-      { label: 'Dashboard', labelBn: 'ড্যাশবোর্ড', href: '/dashboard', icon: 'home' },
-      { label: 'My flats', labelBn: 'আমার ফ্ল্যাট', href: '/flats', icon: 'door' },
       {
-        label: 'Search',
-        labelBn: 'খুঁজুন',
-        href: '/search',
-        icon: 'search',
+        label: 'Dashboard',
+        labelBn: 'ড্যাশবোর্ড',
+        href: '/dashboard',
+        icon: 'home',
+      },
+      {
+        label: 'My Flat',
+        labelBn: 'আমার ফ্ল্যাট',
+        href: '/flats',
+        icon: 'door',
+        roles: ['resident', 'moderator'],
+        permission: 'my_flat.view',
       },
       {
         label: 'Platform',
         labelBn: 'প্ল্যাটফর্ম',
         href: '/platform',
-        roles: ['super_admin'],
         icon: 'shield',
+        roles: ['super_admin'],
       },
     ],
   },
+
   {
     heading: 'Building',
     items: [
       {
+        label: 'Control',
+        labelBn: 'নিয়ন্ত্রণ',
+        href: '/control',
+        icon: 'building',
+        /**
+         * Read-only, and both roles need it: the owner to see the whole
+         * building, the moderator to see the flats they run. `payment.review`
+         * is the permission both hold and nobody else does.
+         */
+        permission: 'payment.review',
+      },
+      {
         label: 'Buildings',
         labelBn: 'বিল্ডিং',
         href: '/admin',
-        permission: 'building.edit',
         icon: 'building',
+        permission: 'building.edit',
       },
       {
         label: 'Flats',
-        labelBn: 'ফ্ল্যাট',
+        labelBn: 'সব ফ্ল্যাট',
         href: '/admin/flats',
-        permission: 'flat.edit',
         icon: 'grid',
+        permission: 'flat.edit',
       },
       {
         label: 'Residents',
-        labelBn: 'ভাড়াটিয়া',
+        labelBn: 'ভাড়াটিয়া',
         href: '/admin/residents',
-        permission: 'resident.invite',
         icon: 'users',
+        permission: 'resident.invite',
       },
       {
         label: 'Invites',
         labelBn: 'আমন্ত্রণ',
         href: '/admin/team',
-        permission: 'org.team.manage',
         icon: 'mail',
+        permission: 'org.team.manage',
       },
     ],
   },
+
   {
     heading: 'Money',
     items: [
       {
         label: 'Dues',
-        labelBn: 'বকেয়া',
+        labelBn: 'বকেয়া',
         href: '/dues',
-        permission: 'report.self.view',
         icon: 'receipt',
+        permission: 'report.self.view',
       },
       {
         label: 'Payments',
         labelBn: 'পেমেন্ট',
         href: '/payments',
-        permission: 'payment.review',
         icon: 'wallet',
+        permission: 'report.self.view',
       },
       {
         label: 'Expenses',
         labelBn: 'খরচ',
         href: '/expenses',
+        icon: 'coins',
         permission: 'expense.manage',
         soon: true,
-        icon: 'coins',
+      },
+      {
+        label: 'Handovers',
+        labelBn: 'হস্তান্তর',
+        href: '/remittances',
+        icon: 'wallet',
+        /**
+         * No permission gate. A resident owes their moderator, a moderator owes
+         * the owner, and an owner reviews both — every role has something on
+         * this page, and each of them only ever sees their own half.
+         */
       },
       {
         label: 'Reports',
         labelBn: 'রিপোর্ট',
         href: '/reports',
-        permission: 'report.flat.view',
         icon: 'chart',
+        permission: 'report.flat.view',
       },
     ],
   },
+
   {
     heading: 'Operations',
     items: [
@@ -117,37 +142,31 @@ export const navigation: NavSection[] = [
         label: 'Gate',
         labelBn: 'গেট',
         href: '/gate',
-        permission: 'visitor.log',
         icon: 'door',
+        permission: 'visitor.log',
       },
       {
         label: 'Visitors',
         labelBn: 'ভিজিটর',
         href: '/visitors',
-        permission: 'visitor.preapprove',
         icon: 'users',
+        permission: 'visitor.preapprove',
       },
       {
-        label: 'Repairs',
-        labelBn: 'মেরামত',
+        label: 'Maintenance',
+        labelBn: 'মেইনটেন্যান্স',
         href: '/maintenance',
-        permission: 'maintenance.create',
         icon: 'wrench',
+        permission: 'maintenance.create',
       },
     ],
   },
+
   {
     heading: 'Account',
     items: [
       {
-        label: 'Plan & billing',
-        labelBn: 'প্ল্যান ও বিলিং',
-        href: '/settings/billing',
-        permission: 'org.billing.manage',
-        icon: 'card',
-      },
-      {
-        label: 'Your profile',
+        label: 'Profile',
         labelBn: 'প্রোফাইল',
         href: '/settings/profile',
         icon: 'user',
@@ -155,17 +174,30 @@ export const navigation: NavSection[] = [
       {
         label: 'Notifications',
         labelBn: 'নোটিফিকেশন',
-        href: '/settings/notifications',
+        /**
+         * The history, not the preferences.
+         *
+         * Somebody clicking a bell-shaped menu entry wants to know what they
+         * were told, not to configure what they will be told. The settings
+         * page is linked from the bottom of this one.
+         */
+        href: '/notifications',
         icon: 'bell',
       },
       {
-        label: 'Audit log',
-        labelBn: 'অডিট লগ',
-        href: '/admin/audit',
-        permission: 'org.audit.view',
-        icon: 'activity',
+        label: 'Pricing',
+        labelBn: 'মূল্য',
+        href: '/settings/plans',
+        icon: 'card',
+        // Buying a plan is the owner's decision, so the prices are theirs too.
+        roles: ['admin', 'super_admin'],
       },
-      { label: 'Support', labelBn: 'সাপোর্ট', href: '/contact', icon: 'help' },
+      {
+        label: 'Support',
+        labelBn: 'সাপোর্ট',
+        href: '/contact',
+        icon: 'help',
+      },
     ],
   },
 ]

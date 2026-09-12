@@ -9,16 +9,50 @@ import type { FlatRow, OccupancyStatus } from '@/types'
 
 /**
  * Flats — the unit of rent, and the thing everything else hangs off.
- *
- * Two rules are enforced here rather than in a form: a flat with active
- * residents cannot be archived, and the plan's unit limit applies to creation.
- * The database holds the rest (unique unit numbers, rent-share totals).
  */
 
 export type FlatWithCounts = FlatRow & {
   residents: number
   moderatorName: string | null
   outstanding: number
+}
+
+export interface MemberShare {
+  id?: string
+  userId?: string
+  name: string
+  role: string
+  share: number
+  status?: 'active' | 'pending'
+  email?: string
+  token?: string
+}
+
+export interface PendingShare {
+  id?: string
+  email: string
+  role?: string
+  share: number
+  expiresAt?: string
+  token?: string
+}
+
+export interface FlatRentSummary {
+  flatId: string
+  totalRent: number
+  allocatedRent: number
+  remainingRent: number
+  membersShares: MemberShare[]
+  pendingShares: PendingShare[]
+}
+
+export interface DynamicRentSummary {
+  flatId: string
+  totalRent: number
+  allocatedRent: number
+  remainingRent: number
+  moderatorShare: number
+  members: MemberShare[]
 }
 
 export async function listFlats(buildingId: string): Promise<FlatRow[]> {
@@ -54,7 +88,6 @@ export async function listFlatsWithCounts(buildingId: string): Promise<FlatWithC
       .in('status', ['open', 'partially_paid']),
   ])
 
-  // Embedded selects are not expressible in the hand-written Database type.
   const members = (membersResult.data ?? []) as unknown as {
     flat_id: string
     role: 'moderator' | 'resident'
@@ -78,8 +111,21 @@ export async function listFlatsWithCounts(buildingId: string): Promise<FlatWithC
   })
 }
 
-export async function getFlat(flatId: string): Promise<FlatRow> {
-  const supabase = createServerSupabase()
+/**
+ * The database handle these functions read through.
+ *
+ * Everything here normally runs as the signed-in person, so RLS decides what
+ * they can see. The nightly billing job has no signed-in person, so it passes
+ * the service-role client instead — the same code, a different pair of eyes.
+ *
+ * Threading it through beats a second copy of the billing rules for the cron to
+ * drift away from. Money logic written twice is money logic that disagrees with
+ * itself eventually.
+ */
+export type Db = ReturnType<typeof createServerSupabase>
+
+export async function getFlat(flatId: string, db?: Db): Promise<FlatRow> {
+  const supabase = db ?? createServerSupabase()
   const { data, error } = await supabase
     .from('flats')
     .select('*')
@@ -89,6 +135,201 @@ export async function getFlat(flatId: string): Promise<FlatRow> {
   if (error) throw toAppError(error)
   if (!data) throw notFound('That flat')
   return data
+}
+
+/**
+ * Dynamic Rent Allocation Summary:
+ * Calculates flat's total rent vs allocated shares among active members and pending invites.
+ */
+export async function getFlatRentSummary(flatId: string): Promise<FlatRentSummary> {
+  const supabase = createServerSupabase()
+
+  const { data: flat, error: flatError } = await supabase
+    .from('flats')
+    .select('id, monthly_rent')
+    .eq('id', flatId)
+    .maybeSingle()
+
+  if (flatError || !flat) {
+    return {
+      flatId,
+      totalRent: 0,
+      allocatedRent: 0,
+      remainingRent: 0,
+      membersShares: [],
+      pendingShares: [],
+    }
+  }
+
+  const totalRent = Number(flat.monthly_rent ?? 0)
+
+  const { data: membersResult, error: membersError } = await supabase
+    .from('flat_members')
+    .select('id, user_id, rent_share, role, profiles(full_name, email)')
+    .eq('flat_id', flatId)
+    .eq('status', 'active')
+
+  if (membersError) throw toAppError(membersError)
+
+  const members = (membersResult ?? []) as unknown as {
+    id: string
+    user_id: string
+    rent_share: number
+    role: string
+    profiles: { full_name: string; email: string } | null
+  }[]
+
+  const membersShares: MemberShare[] = members.map((m) => ({
+    id: m.id,
+    userId: m.user_id,
+    name: m.profiles?.full_name || 'Active Member',
+    email: m.profiles?.email,
+    role: m.role || 'resident',
+    share: Number(m.rent_share || 0),
+    status: 'active',
+  }))
+
+  const { data: invitesResult, error: invitesError } = await supabase
+    .from('invites')
+    .select('id, email, role, rent_share, expires_at')
+    .eq('flat_id', flatId)
+    .is('accepted_at', null)
+    .is('revoked_at', null)
+    .gt('expires_at', new Date().toISOString())
+
+  if (invitesError) throw toAppError(invitesError)
+
+  const pendingShares: PendingShare[] = ((invitesResult ?? []) as unknown as {
+    id: string
+    email: string
+    role: string
+    rent_share: number | null
+    expires_at: string
+  }[]).map((i) => ({
+    id: i.id,
+    email: i.email,
+    role: i.role,
+    share: Number(i.rent_share || 0),
+    expiresAt: i.expires_at,
+  }))
+
+  const membersTotal = membersShares.reduce((sum, item) => sum + item.share, 0)
+  const pendingTotal = pendingShares.reduce((sum, item) => sum + item.share, 0)
+  const allocatedRent = membersTotal + pendingTotal
+  const remainingRent = Math.max(0, totalRent - allocatedRent)
+
+  return {
+    flatId,
+    totalRent,
+    allocatedRent,
+    remainingRent,
+    membersShares,
+    pendingShares,
+  }
+}
+
+/**
+ * Detailed Dynamic Rent Summary for Flat Management UI
+ */
+export async function getDynamicRentSummary(flatId: string): Promise<DynamicRentSummary> {
+  const supabase = createServerSupabase()
+
+  const { data: flat, error: flatError } = await supabase
+    .from('flats')
+    .select('id, monthly_rent')
+    .eq('id', flatId)
+    .single()
+
+  if (flatError || !flat) throw notFound('Flat')
+  const totalRent = Number(flat.monthly_rent || 0)
+
+  const { data: activeMembers, error: activeMembersError } = await supabase
+    .from('flat_members')
+    .select('id, user_id, rent_share, role, profiles(full_name, email)')
+    .eq('flat_id', flatId)
+    .eq('status', 'active')
+
+  if (activeMembersError) throw toAppError(activeMembersError)
+
+  const { data: pendingInvites, error: pendingInvitesError } = await supabase
+    .from('invites')
+    .select('id, email, rent_share, role, expires_at')
+    .eq('flat_id', flatId)
+    .is('accepted_at', null)
+    .is('revoked_at', null)
+    .gt('expires_at', new Date().toISOString())
+
+  if (pendingInvitesError) throw toAppError(pendingInvitesError)
+
+  const membersList: MemberShare[] = []
+  let moderatorShare = 0
+
+  ;(activeMembers || []).forEach((m: any) => {
+    const share = Number(m.rent_share || 0)
+    if (m.role === 'moderator') {
+      moderatorShare += share
+    }
+    membersList.push({
+      id: m.id,
+      userId: m.user_id,
+      name: m.profiles?.full_name || 'Active Resident',
+      email: m.profiles?.email,
+      role: m.role,
+      share,
+      status: 'active',
+    })
+  })
+
+  ;(pendingInvites || []).forEach((i: any) => {
+    membersList.push({
+      id: i.id,
+      name: i.email.split('@')[0],
+      email: i.email,
+      role: i.role,
+      share: Number(i.rent_share || 0),
+      status: 'pending',
+    })
+  })
+
+  const allocatedRent = membersList.reduce((sum, item) => sum + item.share, 0)
+  const remainingRent = Math.max(0, totalRent - allocatedRent)
+
+  return {
+    flatId,
+    totalRent,
+    allocatedRent,
+    remainingRent,
+    moderatorShare,
+    members: membersList,
+  }
+}
+
+export async function updateMemberRentShare(
+  memberId: string,
+  newShare: number,
+): Promise<void> {
+  if (!Number.isFinite(newShare) || newShare < 0) {
+    throw new AppError('bad_request', 'Rent share must be a valid non-negative amount.')
+  }
+
+  const supabase = createServerSupabase()
+  const { error } = await supabase
+    .from('flat_members')
+    .update({ rent_share: newShare })
+    .eq('id', memberId)
+
+  if (error) throw toAppError(error)
+}
+
+export async function deactivateFlatMember(memberId: string): Promise<void> {
+  const supabase = createServerSupabase()
+  const { error } = await supabase
+    .from('flat_members')
+    .update({ status: 'suspended', rent_share: 0 })
+    .eq('id', memberId)
+    .in('status', ['active', 'suspended'])
+
+  if (error) throw toAppError(error)
 }
 
 export async function createFlat(
@@ -167,10 +408,6 @@ export async function updateFlat(
   return data
 }
 
-/**
- * Archiving keeps the flat's history. Refused while people still live there,
- * because their dues and payments would be stranded on a hidden unit.
- */
 export async function archiveFlat(userId: string, flatId: string): Promise<void> {
   const supabase = createServerSupabase()
   const flat = await getFlat(flatId)
@@ -205,11 +442,6 @@ export async function archiveFlat(userId: string, flatId: string): Promise<void>
 
 export type BulkResult = { created: number; skipped: string[] }
 
-/**
- * Generates a floor of units at a time. Existing unit numbers are skipped
- * rather than failing the whole run — an owner adding a new floor to a
- * half-entered building should not have to start over.
- */
 export async function bulkCreateFlats(
   userId: string,
   buildingId: string,
@@ -264,10 +496,6 @@ export async function bulkCreateFlats(
   return { created: toCreate.length, skipped }
 }
 
-/**
- * Free plan covers 12 units per organization. Checked before every insert,
- * counting units that already exist across all of the org's buildings.
- */
 async function assertUnitQuota(buildingId: string, adding: number) {
   const supabase = createServerSupabase()
 
@@ -307,19 +535,11 @@ async function assertUnitQuota(buildingId: string, adding: number) {
   if (used + adding > subscription.unit_limit) {
     throw new AppError(
       'plan_limit_reached',
-      `Your plan covers ${subscription.unit_limit} unit${subscription.unit_limit === 1 ? '' : 's'} and you have ${used}. Upgrade on Plan & billing to add ${adding} more — nothing you already have stops working.`,
+      `Your plan covers ${subscription.unit_limit} unit${subscription.unit_limit === 1 ? '' : 's'} and you have ${used}. Ask the owner to upgrade to add ${adding} more — nothing you already have stops working.`,
     )
   }
 }
 
-/**
- * Every flat in an organization, with its counts, in four queries total.
- *
- * The obvious version — `listFlatsWithCounts` once per building — costs three
- * queries per building, so an owner with six buildings paid for eighteen
- * round trips to draw one table. This does the same work in four regardless
- * of how many buildings there are.
- */
 export async function listOrgFlatsWithCounts(
   orgId: string,
 ): Promise<(FlatWithCounts & { buildingName: string })[]> {
@@ -361,15 +581,12 @@ export async function listOrgFlatsWithCounts(
       .in('status', ['open', 'partially_paid']),
   ])
 
-  // Embedded selects are not expressible in the hand-written Database type.
   const members = (membersResult.data ?? []) as unknown as {
     flat_id: string
     role: 'moderator' | 'resident'
     profiles: { full_name: string } | null
   }[]
 
-  // Grouped once rather than filtered per flat, which would be quadratic on a
-  // large organization.
   const byFlat = new Map<string, typeof members>()
   for (const member of members) {
     const list = byFlat.get(member.flat_id) ?? []

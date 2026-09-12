@@ -2,13 +2,25 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/cron/reminders",
+      "path": "/api/cron/rent",
+      "schedule": "0 2 1 * *"
+    },
+    {
+      "path": "/api/cron/subscriptions",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 4 * * *"
     }
   ],
   "functions": {
     "src/app/api/receipts/[paymentId]/route.ts": { "maxDuration": 30 },
+    "src/app/api/receipts/handover/[paymentId]/route.ts": { "maxDuration": 30 },
+    "src/app/api/invoices/[transactionId]/route.ts": { "maxDuration": 30 },
     "src/app/api/statements/[flatId]/route.ts": { "maxDuration": 30 },
+    "src/app/api/cron/rent/route.ts": { "maxDuration": 300 },
+    "src/app/api/cron/subscriptions/route.ts": { "maxDuration": 60 },
     "src/app/api/cron/reminders/route.ts": { "maxDuration": 60 }
   }
 }

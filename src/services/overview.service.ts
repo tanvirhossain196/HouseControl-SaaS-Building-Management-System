@@ -1,21 +1,16 @@
 import 'server-only'
 
 import { createServerSupabase } from '@/lib/supabase/server'
-import type { DueRow, PaymentRow } from '@/types'
+import type {
+  DueRow,
+  NotificationRow,
+  PaymentRow,
+} from '@/types'
 
-/**
- * The numbers each dashboard opens with.
- *
- * Every query here runs as the signed-in user, so RLS decides what is counted
- * — an owner's totals cover their organization, a moderator's cover their
- * flat, and neither can widen the query by asking differently.
- *
- * All of it is wrapped in `safely()`: a dashboard with a missing number is
- * worth more than an error page, and Phase 4 runs before most of this data
- * exists.
- */
-
-async function safely<T>(work: () => Promise<T>, fallback: T): Promise<T> {
+async function safely<T>(
+  work: () => Promise<T>,
+  fallback: T,
+): Promise<T> {
   try {
     return await work()
   } catch (error) {
@@ -26,12 +21,17 @@ async function safely<T>(work: () => Promise<T>, fallback: T): Promise<T> {
 
 const periodStart = () => {
   const now = new Date()
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  )
     .toISOString()
     .slice(0, 10)
 }
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => {
+  return new Date().toISOString().slice(0, 10)
+}
 
 export type OwnerOverview = {
   buildings: number
@@ -45,7 +45,9 @@ export type OwnerOverview = {
   openRequests: number
 }
 
-export async function getOwnerOverview(orgId: string | null): Promise<OwnerOverview> {
+export async function getOwnerOverview(
+  orgId: string | null,
+): Promise<OwnerOverview> {
   const empty: OwnerOverview = {
     buildings: 0,
     flats: 0,
@@ -57,60 +59,75 @@ export async function getOwnerOverview(orgId: string | null): Promise<OwnerOverv
     pendingPayments: 0,
     openRequests: 0,
   }
-  if (!orgId) return empty
+
+  if (!orgId) {
+    return empty
+  }
 
   return safely(async () => {
     const supabase = createServerSupabase()
 
-    const { data: buildings } = await supabase
+    const { data: buildings, error: buildingsError } = await supabase
       .from('buildings')
       .select('id')
       .eq('org_id', orgId)
       .is('archived_at', null)
 
-    const buildingIds = (buildings ?? []).map((b) => b.id)
-    if (buildingIds.length === 0) return { ...empty }
+    if (buildingsError) {
+      throw buildingsError
+    }
 
-    const { data: flats } = await supabase
+    const buildingIds = (buildings ?? []).map((building) => building.id)
+
+    if (buildingIds.length === 0) {
+      return empty
+    }
+
+    const { data: flats, error: flatsError } = await supabase
       .from('flats')
       .select('id, occupancy_status')
       .in('building_id', buildingIds)
       .is('archived_at', null)
 
-    const flatIds = (flats ?? []).map((f) => f.id)
+    if (flatsError) {
+      throw flatsError
+    }
 
-    const [duesResult, residentsResult, paymentsResult, requestsResult] =
-      await Promise.all([
-        supabase
-          .from('dues')
-          .select('amount, amount_paid, due_date, status')
-          .in(
-            'flat_id',
-            flatIds.length ? flatIds : ['00000000-0000-0000-0000-000000000000'],
-          )
-          .eq('period', periodStart()),
-        supabase
-          .from('flat_members')
-          .select('id', { count: 'exact', head: true })
-          .in(
-            'flat_id',
-            flatIds.length ? flatIds : ['00000000-0000-0000-0000-000000000000'],
-          )
-          .eq('status', 'active'),
-        supabase
-          .from('payments')
-          .select('id', { count: 'exact', head: true })
-          .in(
-            'flat_id',
-            flatIds.length ? flatIds : ['00000000-0000-0000-0000-000000000000'],
-          )
-          .eq('status', 'pending'),
-        supabase
-          .from('maintenance_requests')
-          .select('id', { count: 'exact', head: true })
-          .in('building_id', buildingIds)
-          .in('status', ['open', 'in_progress']),
-      ])
+    const flatIds = (flats ?? []).map((flat) => flat.id)
+    const safeFlatIds = flatIds.length
+      ? flatIds
+      : ['00000000-0000-0000-0000-000000000000']
+
+    const [
+      duesResult,
+      residentsResult,
+      paymentsResult,
+      requestsResult,
+    ] = await Promise.all([
+      supabase
+        .from('dues')
+        .select('amount, amount_paid, due_date, status')
+        .in('flat_id', safeFlatIds)
+        .eq('period', periodStart()),
+
+      supabase
+        .from('flat_members')
+        .select('id', { count: 'exact', head: true })
+        .in('flat_id', safeFlatIds)
+        .eq('status', 'active'),
+
+      supabase
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .in('flat_id', safeFlatIds)
+        .eq('status', 'pending'),
+
+      supabase
+        .from('maintenance_requests')
+        .select('id', { count: 'exact', head: true })
+        .in('building_id', buildingIds)
+        .in('status', ['open', 'in_progress']),
+    ])
 
     const dues = duesResult.data ?? []
     const now = today()
@@ -118,11 +135,21 @@ export async function getOwnerOverview(orgId: string | null): Promise<OwnerOverv
     return {
       buildings: buildingIds.length,
       flats: flatIds.length,
-      occupied: (flats ?? []).filter((f) => f.occupancy_status === 'occupied').length,
+      occupied: (flats ?? []).filter(
+        (flat) => flat.occupancy_status === 'occupied',
+      ).length,
       residents: residentsResult.count ?? 0,
-      billed: dues.reduce((sum, d) => sum + Number(d.amount), 0),
-      collected: dues.reduce((sum, d) => sum + Number(d.amount_paid), 0),
-      overdueCount: dues.filter((d) => d.status !== 'paid' && d.due_date < now).length,
+      billed: dues.reduce(
+        (sum, due) => sum + Number(due.amount),
+        0,
+      ),
+      collected: dues.reduce(
+        (sum, due) => sum + Number(due.amount_paid),
+        0,
+      ),
+      overdueCount: dues.filter(
+        (due) => due.status !== 'paid' && due.due_date < now,
+      ).length,
       pendingPayments: paymentsResult.count ?? 0,
       openRequests: requestsResult.count ?? 0,
     }
@@ -149,22 +176,32 @@ export async function getModeratorOverview(
     pendingPayments: [],
     overdue: [],
   }
-  if (flatIds.length === 0) return empty
+
+  if (flatIds.length === 0) {
+    return empty
+  }
 
   return safely(async () => {
     const supabase = createServerSupabase()
 
-    const [duesResult, membersResult, pendingResult, overdueResult] = await Promise.all([
+    const [
+      duesResult,
+      membersResult,
+      pendingResult,
+      overdueResult,
+    ] = await Promise.all([
       supabase
         .from('dues')
         .select('amount, amount_paid')
         .in('flat_id', flatIds)
         .eq('period', periodStart()),
+
       supabase
         .from('flat_members')
         .select('id', { count: 'exact', head: true })
         .in('flat_id', flatIds)
         .eq('status', 'active'),
+
       supabase
         .from('payments')
         .select('*')
@@ -172,6 +209,7 @@ export async function getModeratorOverview(
         .eq('status', 'pending')
         .order('created_at', { ascending: true })
         .limit(5),
+
       supabase
         .from('dues')
         .select('*')
@@ -187,57 +225,204 @@ export async function getModeratorOverview(
     return {
       flats: flatIds.length,
       residents: membersResult.count ?? 0,
-      billed: dues.reduce((sum, d) => sum + Number(d.amount), 0),
-      collected: dues.reduce((sum, d) => sum + Number(d.amount_paid), 0),
+      billed: dues.reduce(
+        (sum, due) => sum + Number(due.amount),
+        0,
+      ),
+      collected: dues.reduce(
+        (sum, due) => sum + Number(due.amount_paid),
+        0,
+      ),
       pendingPayments: pendingResult.data ?? [],
       overdue: overdueResult.data ?? [],
     }
   }, empty)
 }
 
+export type ResidentFlatSummary = {
+  id: string
+  unitNumber: string
+  buildingName: string
+  monthlyRent: number
+}
+
+export type ResidentSummaryPerson = {
+  id: string
+  name: string
+  email: string
+  role: string
+  rentShare: number
+}
+
+export type ResidentNotification = Pick<
+  NotificationRow,
+  'id' | 'title' | 'body' | 'link' | 'read_at' | 'created_at'
+>
+
 export type ResidentOverview = {
   outstanding: number
   nextDue: DueRow | null
   openDues: DueRow[]
   recentPayments: PaymentRow[]
+
+  rentShare: number
+  flat: ResidentFlatSummary | null
+  moderator: ResidentSummaryPerson | null
+  activeResidents: ResidentSummaryPerson[]
+  notifications: ResidentNotification[]
 }
 
-export async function getResidentOverview(userId: string): Promise<ResidentOverview> {
+export async function getResidentOverview(
+  userId: string,
+): Promise<ResidentOverview> {
   const empty: ResidentOverview = {
     outstanding: 0,
     nextDue: null,
     openDues: [],
     recentPayments: [],
+    rentShare: 0,
+    flat: null,
+    moderator: null,
+    activeResidents: [],
+    notifications: [],
   }
 
   return safely(async () => {
     const supabase = createServerSupabase()
 
-    const [duesResult, paymentsResult] = await Promise.all([
+    const [
+      duesResult,
+      paymentsResult,
+      membershipResult,
+      notificationsResult,
+    ] = await Promise.all([
       supabase
         .from('dues')
         .select('*')
         .eq('user_id', userId)
         .in('status', ['open', 'partially_paid'])
         .order('due_date', { ascending: true }),
+
       supabase
         .from('payments')
         .select('*')
         .eq('paid_by', userId)
         .order('paid_at', { ascending: false })
         .limit(5),
+
+      supabase
+        .from('flat_members')
+        .select('flat_id, rent_share')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .order('joined_at', { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+
+      supabase
+        .from('notifications')
+        .select('id, title, body, link, read_at, created_at')
+        .eq('user_id', userId)
+        .is('read_at', null)
+        .order('created_at', { ascending: false })
+        .limit(5),
     ])
 
     const openDues = duesResult.data ?? []
+    const membership = membershipResult.data
+    const recentPayments = paymentsResult.data ?? []
+    const notifications = notificationsResult.data ?? []
+
+    let flat: ResidentFlatSummary | null = null
+    let moderator: ResidentSummaryPerson | null = null
+    let activeResidents: ResidentSummaryPerson[] = []
+
+    if (membership?.flat_id) {
+      const [
+        flatResult,
+        membersResult,
+      ] = await Promise.all([
+        supabase
+          .from('flats')
+          .select('id, unit_number, monthly_rent, building_id')
+          .eq('id', membership.flat_id)
+          .maybeSingle(),
+
+        supabase
+          .from('flat_members')
+          .select('id, user_id, role, rent_share')
+          .eq('flat_id', membership.flat_id)
+          .eq('status', 'active')
+          .order('joined_at', { ascending: true }),
+      ])
+
+      if (flatResult.data) {
+        const { data: building } = await supabase
+          .from('buildings')
+          .select('name')
+          .eq('id', flatResult.data.building_id)
+          .maybeSingle()
+
+        flat = {
+          id: flatResult.data.id,
+          unitNumber: flatResult.data.unit_number,
+          buildingName: building?.name ?? 'Building',
+          monthlyRent: Number(flatResult.data.monthly_rent),
+        }
+      }
+
+      const memberRows = membersResult.data ?? []
+      const memberUserIds = memberRows.map(
+        (member) => member.user_id,
+      )
+
+      if (memberUserIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', memberUserIds)
+
+        const profileMap = new Map(
+          (profiles ?? []).map((profile) => [
+            profile.id,
+            profile,
+          ]),
+        )
+
+        activeResidents = memberRows.map((member) => {
+          const profile = profileMap.get(member.user_id)
+
+          return {
+            id: member.user_id,
+            name: profile?.full_name ?? 'Resident',
+            email: profile?.email ?? '',
+            role: member.role,
+            rentShare: Number(member.rent_share),
+          }
+        })
+
+        moderator =
+          activeResidents.find(
+            (resident) => resident.role === 'moderator',
+          ) ?? null
+      }
+    }
 
     return {
       outstanding: openDues.reduce(
-        (sum, d) => sum + (Number(d.amount) - Number(d.amount_paid)),
+        (sum, due) =>
+          sum +
+          (Number(due.amount) - Number(due.amount_paid)),
         0,
       ),
       nextDue: openDues[0] ?? null,
       openDues,
-      recentPayments: paymentsResult.data ?? [],
+      recentPayments,
+      rentShare: Number(membership?.rent_share ?? 0),
+      flat,
+      moderator,
+      activeResidents,
+      notifications,
     }
   }, empty)
 }
@@ -249,28 +434,40 @@ export type GateOverview = {
   buildingName: string | null
 }
 
-export async function getGateOverview(orgId: string | null): Promise<GateOverview> {
+export async function getGateOverview(
+  orgId: string | null,
+): Promise<GateOverview> {
   const empty: GateOverview = {
     inside: 0,
     todayEntries: 0,
     buildingId: null,
     buildingName: null,
   }
-  if (!orgId) return empty
+
+  if (!orgId) {
+    return empty
+  }
 
   return safely(async () => {
     const supabase = createServerSupabase()
 
-    const { data: building } = await supabase
-      .from('buildings')
-      .select('id, name')
-      .eq('org_id', orgId)
-      .is('archived_at', null)
-      .order('name')
-      .limit(1)
-      .maybeSingle()
+    const { data: building, error: buildingError } =
+      await supabase
+        .from('buildings')
+        .select('id, name')
+        .eq('org_id', orgId)
+        .is('archived_at', null)
+        .order('name')
+        .limit(1)
+        .maybeSingle()
 
-    if (!building) return empty
+    if (buildingError) {
+      throw buildingError
+    }
+
+    if (!building) {
+      return empty
+    }
 
     const startOfDay = `${today()}T00:00:00.000Z`
 
@@ -280,6 +477,7 @@ export async function getGateOverview(orgId: string | null): Promise<GateOvervie
         .select('id', { count: 'exact', head: true })
         .eq('building_id', building.id)
         .eq('state', 'inside'),
+
       supabase
         .from('visitors')
         .select('id', { count: 'exact', head: true })

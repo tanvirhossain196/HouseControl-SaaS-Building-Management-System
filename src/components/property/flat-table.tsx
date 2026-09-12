@@ -138,8 +138,18 @@ export function FlatTable({
           <TBody>
             {rows.map((flat) => (
               <TR key={flat.id}>
+                {/*
+                  The unit number is the way into the flat, so it is the link.
+                  A row that opens only through a menu three columns to the
+                  right is a row most people never open.
+                */}
                 <TD className="tabular font-mono text-xs font-medium">
-                  {flat.unit_number}
+                  <Link
+                    href={`/flats/${flat.id}`}
+                    className="text-primary underline-offset-4 hover:underline"
+                  >
+                    {flat.unit_number}
+                  </Link>
                 </TD>
                 {showBuilding && (
                   <TD className="text-sm text-muted">{flat.buildingName}</TD>

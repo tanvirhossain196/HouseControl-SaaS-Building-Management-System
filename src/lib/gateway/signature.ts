@@ -5,9 +5,8 @@ import { createHash } from 'node:crypto'
  * it can be tested on its own — this is the function that decides whether a
  * stranger can mark rent as paid.
  *
- * SSLCommerz sends `verify_key`, a comma-separated list of the fields that
- * were signed, and `verify_sign`, the MD5 of those fields in alphabetical
- * order with the MD5 of the store password appended.
+ * SSLCommerz sends `verify_key`, a comma-separated list of the fields that were
+ * signed, and `verify_sign`, an MD5 digest over those fields.
  */
 
 export type IpnPayload = Record<string, string | undefined>
@@ -25,15 +24,39 @@ export function timingSafeEqualHex(a: string, b: string): boolean {
 }
 
 /**
+ * Builds the string SSLCommerz hashes.
+ *
+ * The detail that is easy to get wrong: the MD5 of the store password is added
+ * to the set as a field named `store_passwd` and then everything is sorted
+ * together. It is not appended at the end. Fields like `tran_id`, `val_id` and
+ * `value_a` sort after `store_passwd`, so appending puts them on the wrong side
+ * of it and the digest never matches. This mirrors the reference
+ * implementation, which does ksort() after adding the password.
+ *
+ * Sorting is plain byte order, the same as PHP's ksort on string keys — not a
+ * locale-aware comparison.
+ */
+function hashString(
+  fields: Array<[string, string]>,
+  storePassword: string,
+): string {
+  const entries: Array<[string, string]> = [
+    ...fields,
+    ['store_passwd', md5(storePassword)],
+  ]
+
+  entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+
+  return entries.map(([key, value]) => `${key}=${value}`).join('&')
+}
+
+/**
  * True when the payload is authentic and unaltered.
  *
- * Two details are easy to get wrong and both are load-bearing:
- *
- *   - Only the fields named in `verify_key` are hashed, in sorted order.
- *     Hashing everything in the request, or using the request's own order,
- *     never matches.
- *   - Every named field must be present. A missing one would hash as an empty
- *     string and let a truncated payload through.
+ * Only the fields named in `verify_key` are hashed. A field named there but
+ * absent from the payload is skipped, as the reference implementation does —
+ * dropping a field cannot help a forger, because the signature was computed
+ * over the full set and our digest would no longer match it.
  */
 export function verifyIpnSignature(payload: IpnPayload, storePassword: string): boolean {
   const verifyKey = payload.verify_key
@@ -48,16 +71,13 @@ export function verifyIpnSignature(payload: IpnPayload, storePassword: string): 
 
   if (fields.length === 0) return false
 
-  for (const field of fields) {
-    if (payload[field] === undefined) return false
-  }
+  const present = fields
+    .filter((field) => payload[field] !== undefined)
+    .map((field) => [field, payload[field] as string] as [string, string])
 
-  const parts = [...fields]
-    .sort()
-    .map((field) => `${field}=${payload[field]}`)
-    .join('&')
+  if (present.length === 0) return false
 
-  const expected = md5(`${parts}&store_passwd=${md5(storePassword)}`)
+  const expected = md5(hashString(present, storePassword))
 
   return timingSafeEqualHex(expected, verifySign.toLowerCase())
 }
@@ -68,14 +88,13 @@ export function signIpnPayload(
   fields: string[],
   storePassword: string,
 ): { verify_key: string; verify_sign: string } {
-  const parts = [...fields]
-    .sort()
-    .map((field) => `${field}=${payload[field]}`)
-    .join('&')
+  const entries = fields.map(
+    (field) => [field, payload[field] ?? ''] as [string, string],
+  )
 
   return {
     verify_key: fields.join(','),
-    verify_sign: md5(`${parts}&store_passwd=${md5(storePassword)}`),
+    verify_sign: md5(hashString(entries, storePassword)),
   }
 }
 

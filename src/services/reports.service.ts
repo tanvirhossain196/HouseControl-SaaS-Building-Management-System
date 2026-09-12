@@ -344,7 +344,8 @@ export async function ledgerRows(period = periodOf()): Promise<LedgerRow[]> {
   const { data, error } = await supabase
     .from('dues')
     .select(
-      'amount, amount_paid, due_date, description, source, status, flats(unit_number), profiles(full_name)',
+      // profiles is ambiguous on dues (user_id and created_by), so name the column.
+      'amount, amount_paid, due_date, description, source, status, flats(unit_number), resident:profiles!user_id(full_name)',
     )
     .eq('period', period)
     .order('due_date')
@@ -353,13 +354,13 @@ export async function ledgerRows(period = periodOf()): Promise<LedgerRow[]> {
 
   const rows = (data ?? []) as unknown as (DueRecord & {
     flats: { unit_number: string } | null
-    profiles: { full_name: string } | null
+    resident: { full_name: string } | null
   })[]
 
   return rows.map((row) => ({
     date: row.due_date,
     unit: row.flats?.unit_number ?? '',
-    resident: row.profiles?.full_name ?? 'Unassigned',
+    resident: row.resident?.full_name ?? 'Unassigned',
     description: row.description ?? row.source,
     charged: Number(row.amount),
     paid: Number(row.amount_paid),

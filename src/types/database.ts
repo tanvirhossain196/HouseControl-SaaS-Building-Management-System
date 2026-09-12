@@ -1,28 +1,26 @@
-/**
- * Database types.
- *
- * Hand-written to match supabase/migrations. Once a Supabase project exists,
- * regenerate instead of editing:
- *
- *   npm run db:types
- *
- * The enums below are the single source of truth for the app's string unions —
- * import from '@/types' rather than retyping literals in components.
- */
-
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[]
 
 export type AppRole = 'super_admin' | 'admin' | 'moderator' | 'member' | 'guard'
+
 export type OrgRole = 'admin' | 'guard'
+
 export type FlatRole = 'moderator' | 'resident'
+
 export type MembershipStatus = 'invited' | 'active' | 'suspended' | 'left'
+
 export type OccupancyStatus = 'occupied' | 'vacant' | 'reserved' | 'not_rentable'
+
 export type DueSource = 'rent' | 'utility' | 'expense' | 'penalty' | 'other'
+
 export type DueStatus = 'open' | 'partially_paid' | 'paid' | 'waived'
+
 export type PaymentMethod =
   'cash' | 'bkash' | 'nagad' | 'bank_transfer' | 'card' | 'other'
+
 export type PaymentStatus = 'pending' | 'confirmed' | 'rejected' | 'failed' | 'refunded'
+
 export type ExpenseScope = 'building' | 'flat'
+
 export type ExpenseCategory =
   | 'electricity'
   | 'gas'
@@ -33,17 +31,26 @@ export type ExpenseCategory =
   | 'lift'
   | 'repair'
   | 'other'
+
 export type SplitMethod = 'equal' | 'custom' | 'by_unit_size' | 'by_usage'
+
 export type VisitorState = 'pre_approved' | 'inside' | 'exited' | 'denied'
+
 export type MaintenanceStatus = 'open' | 'in_progress' | 'resolved' | 'cancelled'
+
 export type MaintenancePriority = 'low' | 'normal' | 'high' | 'urgent'
+
 export type NotificationChannel = 'in_app' | 'email' | 'sms' | 'push'
+
 export type TransferStatus =
   'pending' | 'accepted' | 'rejected' | 'expired' | 'rolled_back'
-export type PlanTier = 'free' | 'pro'
+
+export type PlanTier = 'free' | 'plus' | 'pro'
+
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'cancelled'
 
-/** Columns every table carries. */
+export type SubscriptionPaymentStatus = 'pending' | 'confirmed' | 'failed' | 'cancelled'
+
 type Timestamps = {
   created_at: string
   updated_at: string
@@ -93,6 +100,24 @@ export type SubscriptionRow = Timestamps & {
   provider: string | null
   provider_reference: string | null
   cancelled_at: string | null
+  /** Set by a scheduled cancellation; the expiry cron reads it on the end date. */
+  cancel_at_period_end: boolean
+}
+
+export type SubscriptionPaymentRow = Timestamps & {
+  id: string
+  org_id: string
+  plan: PlanTier
+  months: number
+  amount: number
+  currency: string
+  provider: string
+  transaction_id: string
+  provider_reference: string | null
+  status: SubscriptionPaymentStatus
+  gateway_status: string | null
+  gateway_payload: Json | null
+  paid_at: string | null
 }
 
 export type BuildingRow = Timestamps & {
@@ -135,6 +160,19 @@ export type FlatMemberRow = Timestamps & {
   joined_at: string
   left_at: string | null
   left_reason: string | null
+}
+
+export type FlatVisibilitySettingsRow = {
+  flat_id: string
+  show_member_phone: boolean
+  show_member_rent: boolean
+  show_payment_status: boolean
+  show_due_date: boolean
+  show_member_list: boolean
+  show_moderator_phone: boolean
+  updated_by: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type DueRow = Timestamps & {
@@ -276,7 +314,6 @@ export type NotificationRow = {
   data: Json
   read_at: string | null
   created_at: string
-  /** event:user:subject:day — the index that stops a repeat send. */
   dedupe_key: string | null
   send_after: string | null
   subject_id: string | null
@@ -317,6 +354,7 @@ export type InviteRow = {
   email: string
   role: AppRole
   rent_share: number | null
+  token: string | null
   token_hash: string
   invited_by: string
   expires_at: string
@@ -357,7 +395,6 @@ export type ModeratorTransferRow = {
   rolled_back_at: string | null
   rolled_back_by: string | null
   created_at: string
-  /** SHA-256 of the code and a server secret. Cleared once verified. */
   otp_hash: string | null
   otp_sent_at: string | null
   otp_expires_at: string | null
@@ -399,10 +436,50 @@ export type AuditLogRow = {
 }
 
 /**
- * Shape Supabase expects: Row for reads, Insert for writes, Update for patches.
- * `Required` lists the columns that have no default and no null — everything
- * else may be omitted on insert.
+ * What a moderator owes the owner for one building and one month.
+ *
+ * `amount` is the full rent of the flats they cover, copied from the rent roll
+ * when the month is billed — not the sum of what the residents actually paid.
+ * The moderator carries the shortfall, which is the whole point of the
+ * arrangement and the reason this is a separate ledger rather than a view.
  */
+export type RemittanceRow = Timestamps & {
+  id: string
+  building_id: string
+  moderator_id: string
+  period: string
+  amount: number
+  /** Maintained by a trigger from confirmed payments. Never written by hand. */
+  amount_paid: number
+  due_date: string
+  status: DueStatus
+  flat_count: number
+  note: string | null
+  created_by: string | null
+}
+
+export type RemittancePaymentRow = Timestamps & {
+  id: string
+  remittance_id: string
+  paid_by: string | null
+  amount: number
+  method: PaymentMethod
+  status: PaymentStatus
+  paid_at: string
+  reference: string | null
+  note: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
+  rejection_reason: string | null
+  /**
+   * Issued the moment the owner confirms, in its own HR- series.
+   *
+   * A database constraint ties the two together in both directions: a confirmed
+   * handover always carries one, and nothing else ever does.
+   */
+  receipt_no: string | null
+}
+
 type TableDef<Row, RequiredKeys extends keyof Row> = {
   Row: Row
   Insert: Pick<Row, RequiredKeys> & Partial<Omit<Row, RequiredKeys>>
@@ -414,61 +491,103 @@ export type Database = {
   public: {
     Tables: {
       profiles: TableDef<ProfileRow, 'id' | 'email' | 'full_name'>
+
       organizations: TableDef<OrganizationRow, 'name' | 'slug' | 'owner_id'>
+
       org_members: TableDef<OrgMemberRow, 'org_id' | 'user_id' | 'role'>
+
       subscriptions: TableDef<SubscriptionRow, 'org_id'>
+
+      subscription_payments: TableDef<
+        SubscriptionPaymentRow,
+        'org_id' | 'plan' | 'months' | 'amount' | 'transaction_id'
+      >
+
       buildings: TableDef<BuildingRow, 'org_id' | 'name' | 'address_line' | 'created_by'>
+
       flats: TableDef<FlatRow, 'building_id' | 'unit_number' | 'floor'>
+
       flat_members: TableDef<FlatMemberRow, 'flat_id' | 'user_id'>
+
+      flat_visibility_settings: TableDef<FlatVisibilitySettingsRow, 'flat_id'>
+
       dues: TableDef<DueRow, 'flat_id' | 'source' | 'period' | 'amount' | 'due_date'>
+
       payments: TableDef<PaymentRow, 'flat_id' | 'amount'>
+
+      remittances: TableDef<
+        RemittanceRow,
+        'building_id' | 'moderator_id' | 'period' | 'amount' | 'due_date'
+      >
+
+      remittance_payments: TableDef<RemittancePaymentRow, 'remittance_id' | 'amount'>
+
       expenses: TableDef<
         ExpenseRow,
         'building_id' | 'category' | 'title' | 'amount' | 'period' | 'created_by'
       >
+
       visitors: TableDef<VisitorRow, 'building_id' | 'full_name'>
+
       blocked_visitors: TableDef<
         BlockedVisitorRow,
         'building_id' | 'full_name' | 'reason' | 'blocked_by'
       >
+
       maintenance_requests: TableDef<
         MaintenanceRow,
         'building_id' | 'reference' | 'title' | 'description' | 'reported_by'
       >
+
       invites: TableDef<
         InviteRow,
-        'org_id' | 'email' | 'role' | 'token_hash' | 'invited_by' | 'expires_at'
+        'org_id' | 'email' | 'role' | 'token' | 'token_hash' | 'invited_by' | 'expires_at'
       >
+
       expense_shares: TableDef<ExpenseShareRow, 'expense_id' | 'flat_id' | 'amount'>
+
       landlord_rent_records: TableDef<LandlordRentRow, 'flat_id' | 'period' | 'amount'>
+
       moderator_transfers: TableDef<
         ModeratorTransferRow,
         'flat_id' | 'from_user_id' | 'to_user_id' | 'expires_at'
       >
+
       maintenance_events: TableDef<MaintenanceEventRow, 'request_id' | 'to_status'>
+
       notifications: TableDef<NotificationRow, 'user_id' | 'event' | 'title'>
+
       notification_preferences: TableDef<NotificationPreferenceRow, 'user_id' | 'event'>
+
       message_deliveries: TableDef<MessageDeliveryRow, 'channel' | 'template'>
+
       audit_logs: TableDef<AuditLogRow, 'action' | 'entity_type'>
+
       webhook_events: TableDef<
         WebhookEventRow,
         'provider' | 'transaction_id' | 'signature_ok'
       >
     }
+
     Views: Record<string, never>
+
     Functions: Record<string, never>
+
     Enums: {
       app_role: AppRole
       org_role: OrgRole
       flat_role: FlatRole
     }
+
     CompositeTypes: Record<string, never>
   }
 }
 
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row']
+
 export type InsertDto<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Insert']
+
 export type UpdateDto<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Update']

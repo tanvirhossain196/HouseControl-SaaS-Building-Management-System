@@ -32,6 +32,16 @@ export function BillMonth({
   const [error, setError] = React.useState<string | null>(null)
   const [skipped, setSkipped] = React.useState<string[]>([])
 
+  /**
+   * The moderators' deadline, as a day of the month.
+   *
+   * Empty means "let each moderator inherit the last of their residents' due
+   * dates", which is the fair default. A day picked here overrides that for
+   * everyone in the building — the owner asking for the money on one date
+   * rather than several.
+   */
+  const [remitDay, setRemitDay] = React.useState('')
+
   const current = periodOf()
   const periods = [current, previousPeriod(current)]
   const [period, setPeriod] = React.useState(current)
@@ -41,7 +51,17 @@ export function BillMonth({
     setError(null)
     setSkipped([])
 
-    const result = await billMonthAction({ scope, id, period })
+    /**
+     * A day is turned into a full date against the month being billed, and
+     * clamped to 28 in the dropdown so February can never produce a date that
+     * does not exist.
+     */
+    const remitDueDate =
+      scope === 'building' && remitDay
+        ? `${period.slice(0, 7)}-${remitDay.padStart(2, '0')}`
+        : undefined
+
+    const result = await billMonthAction({ scope, id, period, remitDueDate })
     setPending(false)
 
     if (!result.ok) {
@@ -49,7 +69,22 @@ export function BillMonth({
       return
     }
 
-    if (result.data.skipped.length > 0) setSkipped(result.data.skipped)
+    /**
+     * Flats with no moderator are shown next to the flats that could not be
+     * billed. Both mean the same thing to the owner: rent that is on the ledger
+     * but that nobody has been made answerable for.
+     */
+    const problems = [
+      ...result.data.skipped,
+      ...result.data.unmanagedFlats.map(
+        (unit) => `${unit}: no moderator, so nobody owes you this rent`,
+      ),
+      ...(result.data.remittanceError ? [result.data.remittanceError] : []),
+    ]
+
+    if (problems.length > 0) setSkipped(problems)
+
+    const remitted = result.data.remittances
 
     toast({
       tone: result.data.created > 0 ? 'success' : 'info',
@@ -59,11 +94,15 @@ export function BillMonth({
           : 'Already billed',
       body:
         result.data.created > 0
-          ? `${periodLabel(period)} is on the ledger.`
+          ? remitted > 0
+            ? `${periodLabel(period)} is on the ledger, and ${remitted} moderator${
+                remitted === 1 ? '' : 's'
+              } now owe you for it.`
+            : `${periodLabel(period)} is on the ledger.`
           : `${periodLabel(period)} was billed earlier. Nothing was duplicated.`,
     })
 
-    if (result.data.skipped.length === 0) setOpen(false)
+    if (problems.length === 0) setOpen(false)
     router.refresh()
   }
 
@@ -105,6 +144,27 @@ export function BillMonth({
               ))}
             </Select>
           </Field>
+
+          {scope === 'building' && (
+            <Field
+              label="Moderators hand over by"
+              htmlFor="remitDay"
+              hint="Leave it on the default and each moderator is due the day their last resident is — which gives them no time to collect. Pick a later day."
+            >
+              <Select
+                id="remitDay"
+                value={remitDay}
+                onChange={(event) => setRemitDay(event.target.value)}
+              >
+                <option value="">Same day as the last resident</option>
+                {Array.from({ length: 28 }, (_, index) => index + 1).map((day) => (
+                  <option key={day} value={String(day)}>
+                    {day} {periodLabel(period)}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          )}
 
           {skipped.length > 0 && (
             <div className="rounded-control border border-due/30 bg-due-soft p-3">

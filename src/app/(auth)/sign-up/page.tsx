@@ -3,11 +3,11 @@ import { AuthCard, AuthLink } from '@/components/auth/auth-card'
 import { GoogleButton } from '@/components/auth/google-button'
 import { SignUpForm } from '@/components/auth/sign-up-form'
 import { getTranslations } from '@/lib/i18n'
+import { limitsFor } from '@/lib/pricing'
 
 export const metadata = pageMetadata({
   title: 'Create an account',
-  description:
-    'Set up HouseControl for your building. Free for one building up to 12 units.',
+  description: `Set up HouseControl for your building. Free for one building up to ${limitsFor('free').units} units.`,
   path: '/sign-up',
   noIndex: true,
 })

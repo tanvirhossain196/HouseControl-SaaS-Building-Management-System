@@ -3,7 +3,8 @@ import 'server-only'
 import { createServerSupabase } from '@/lib/supabase/server'
 import { AppError, conflict, notFound, toAppError } from '@/lib/errors'
 import { writeAuditLog } from './audit.service'
-import { getFlat } from './flats.service'
+import { raiseRemittances, type RaiseResult } from './remittances.service'
+import { getFlat, type Db } from './flats.service'
 import { listResidents } from './residents.service'
 import { dueDateFor, outstandingOf, periodOf, todayInDhaka } from '@/lib/billing'
 import type { DueRow } from '@/types'
@@ -29,7 +30,7 @@ export async function listFlatDues(
 
   let query = supabase
     .from('dues')
-    .select('*, profiles(full_name)')
+    .select('*, resident:profiles!user_id(full_name)')
     .eq('flat_id', flatId)
     .order('due_date', { ascending: false })
     .limit(200)
@@ -41,9 +42,9 @@ export async function listFlatDues(
 
   // Embedded selects are not expressible in the hand-written Database type.
   const rows = (data ?? []) as unknown as (DueRow & {
-    profiles: { full_name: string } | null
+    resident: { full_name: string } | null
   })[]
-  return rows.map((row) => ({ ...row, residentName: row.profiles?.full_name ?? null }))
+  return rows.map((row) => ({ ...row, residentName: row.resident?.full_name ?? null }))
 }
 
 /** Everything one person owes, oldest first, across every flat they are in. */
@@ -106,13 +107,15 @@ export type BillResult = {
  * the building's books.
  */
 export async function billFlatRent(
-  actorId: string,
+  /** Null when the nightly job raised it — nobody decided anything. */
+  actorId: string | null,
   flatId: string,
   period: string = periodOf(),
+  db?: Db,
 ): Promise<BillResult> {
-  const supabase = createServerSupabase()
-  const flat = await getFlat(flatId)
-  const residents = await listResidents(flatId)
+  const supabase = db ?? createServerSupabase()
+  const flat = await getFlat(flatId, db)
+  const residents = await listResidents(flatId, db)
 
   const rent = Number(flat.monthly_rent)
   if (rent <= 0) {
@@ -124,7 +127,15 @@ export async function billFlatRent(
     throw conflict(`Flat ${flat.unit_number} has nobody living in it this month.`)
   }
 
-  const dueDate = dueDateFor(period, flat.rent_due_day)
+  /**
+   * Rent falls due the day it is billed, not on a fixed day of the month.
+   *
+   * A landlord who bills on the 7th has not given anyone a bill for the 5th,
+   * and dating it backwards would show residents as late for days they were
+   * never told about. The ten-day grace in latenessOf() is what turns "due"
+   * into "overdue" after that.
+   */
+  const dueDate = todayInDhaka()
   const assigned = residents.reduce((sum, resident) => sum + resident.rentShare, 0)
   const unassigned = Math.round((rent - assigned) * 100) / 100
 
@@ -136,7 +147,8 @@ export async function billFlatRent(
     amount: number
     due_date: string
     description: string
-    created_by: string
+    /** Null when the nightly job raised the charge rather than a person. */
+    created_by: string | null
   }
 
   const rows: DueInsert[] = residents
@@ -169,19 +181,41 @@ export async function billFlatRent(
     throw conflict('Nobody in this flat has a rent share yet.')
   }
 
-  // ignoreDuplicates leaves already-billed rows exactly as they are, including
-  // any payments made against them.
-  const { data, error } = await supabase
+  /**
+   * Read first, then insert only what is missing.
+   *
+   * An upsert would be shorter, but dues_unique_per_source_period is built on
+   * expressions — coalesce(user_id, ...) and coalesce(source_id, ...) — and
+   * Postgres will not accept an expression index as an ON CONFLICT arbiter from
+   * a plain column list. It raised 42P10 every time, and the caller's catch
+   * turned that into "could not be billed" and moved on, so rent quietly stopped
+   * being billed at all while the remittance ledger beside it kept working.
+   *
+   * Looking the month up first gives the same protection against double billing
+   * without asking the planner to infer anything.
+   */
+  const { data: existing, error: existingError } = await supabase
     .from('dues')
-    .upsert(rows, {
-      onConflict: 'flat_id,user_id,source,source_id,period',
-      ignoreDuplicates: true,
-    })
-    .select('id')
+    .select('user_id')
+    .eq('flat_id', flatId)
+    .eq('period', period)
+    .eq('source', 'rent')
+    .is('source_id', null)
 
-  if (error) throw toAppError(error)
+  if (existingError) throw toAppError(existingError)
 
-  const created = data?.length ?? 0
+  const alreadyBilled = new Set((existing ?? []).map((row) => row.user_id))
+  const missing = rows.filter((row) => !alreadyBilled.has(row.user_id))
+
+  let created = 0
+
+  if (missing.length > 0) {
+    const { data, error } = await supabase.from('dues').insert(missing).select('id')
+
+    if (error) throw toAppError(error)
+
+    created = data?.length ?? 0
+  }
 
   if (created > 0) {
     await writeAuditLog({
@@ -200,15 +234,22 @@ export type BuildingBillResult = {
   billed: number
   created: number
   skipped: string[]
+  /** What each moderator now owes the owner for this month. */
+  remittances: RaiseResult | null
+  remittanceError: string | null
 }
 
 /** Bills every occupied flat in a building. Flats that cannot be billed are named. */
 export async function billBuildingRent(
-  actorId: string,
+  /** Null when the nightly job raised it — nobody decided anything. */
+  actorId: string | null,
   buildingId: string,
   period: string = periodOf(),
+  /** The owner's deadline for the moderators. Defaults to the last rent day. */
+  remitDueDate?: string,
+  db?: Db,
 ): Promise<BuildingBillResult> {
-  const supabase = createServerSupabase()
+  const supabase = db ?? createServerSupabase()
 
   const { data: flats, error } = await supabase
     .from('flats')
@@ -226,13 +267,43 @@ export async function billBuildingRent(
 
   for (const flat of flats) {
     try {
-      const result = await billFlatRent(actorId, flat.id, period)
+      const result = await billFlatRent(actorId, flat.id, period, db)
       billed += 1
       created += result.created
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : 'could not be billed'
+
+      /**
+       * The full error to the server log, the tidy one to the caller.
+       *
+       * toAppError turns anything it does not recognise into "Something went
+       * wrong on our side", which is the right thing to show a landlord and
+       * useless to whoever has to fix it. Without this line the original —
+       * usually a Postgres constraint with a name in it — is thrown away.
+       */
+      console.error('[bill] flat', flat.unit_number, flat.id, cause)
+
       skipped.push(`${flat.unit_number}: ${message}`)
     }
+  }
+
+  /**
+   * The second ledger is raised in the same breath as the first.
+   *
+   * Residents owing rent while no moderator owes anything would be a hole in
+   * the accounts that nobody notices until the month is over. A failure here is
+   * reported alongside the billing result rather than thrown: the rent has
+   * already been billed by this point, and unwinding it to complain about the
+   * remittances would be worse than saying what went wrong.
+   */
+  let remittances: RaiseResult | null = null
+  let remittanceError: string | null = null
+
+  try {
+    remittances = await raiseRemittances(actorId, buildingId, period, remitDueDate, db)
+  } catch (cause) {
+    remittanceError =
+      cause instanceof Error ? cause.message : 'Remittances could not be raised.'
   }
 
   await writeAuditLog({
@@ -240,10 +311,86 @@ export async function billBuildingRent(
     action: 'dues.billed_building',
     entityType: 'building',
     entityId: buildingId,
-    after: { period, flats: billed, dues: created, skipped: skipped.length },
+    after: {
+      period,
+      flats: billed,
+      dues: created,
+      skipped: skipped.length,
+      remittances: remittances?.created ?? 0,
+    },
   })
 
-  return { billed, created, skipped }
+  return { billed, created, skipped, remittances, remittanceError }
+}
+
+/**
+ * The moderator sets the rent day for a flat they run.
+ *
+ * Two separate effects, because they are two separate decisions and conflating
+ * them is how a landlord ends up surprised:
+ *
+ *   the flat's rent_due_day    every month billed from now on
+ *   applyToOpenDues            this month's charges that are still unpaid
+ *
+ * Paid and partly-paid charges are never touched. Moving the date on money that
+ * has already changed hands rewrites history, and a resident who paid on time
+ * would suddenly appear to have paid late, or the reverse.
+ */
+export async function updateRentSchedule(
+  actorId: string,
+  flatId: string,
+  input: {
+    rentDueDay: number
+    applyToOpenDues: boolean
+    period?: string
+  },
+): Promise<{ dueDay: number; duesMoved: number }> {
+  const supabase = createServerSupabase()
+  const flat = await getFlat(flatId)
+
+  const day = Math.min(28, Math.max(1, Math.round(input.rentDueDay)))
+
+  const { error: flatError } = await supabase
+    .from('flats')
+    .update({ rent_due_day: day })
+    .eq('id', flatId)
+
+  if (flatError) throw toAppError(flatError)
+
+  let duesMoved = 0
+
+  if (input.applyToOpenDues) {
+    const period = input.period ?? periodOf()
+
+    /**
+     * Moving open charges still honours the chosen day, because here the
+     * landlord is deliberately naming a date rather than billing. Charges that
+     * have been paid against are never touched — see below.
+     */
+    const dueDate = dueDateFor(period, day)
+
+    const { data: moved, error: dueError } = await supabase
+      .from('dues')
+      .update({ due_date: dueDate })
+      .eq('flat_id', flatId)
+      .eq('period', period)
+      .eq('status', 'open')
+      .select('id')
+
+    if (dueError) throw toAppError(dueError)
+    duesMoved = moved?.length ?? 0
+  }
+
+  await writeAuditLog({
+    actorId,
+    action: 'flat.rent_day_changed',
+    entityType: 'flat',
+    entityId: flatId,
+    before: { rentDueDay: flat.rent_due_day },
+    after: { rentDueDay: day, duesMoved },
+  })
+
+  return { dueDay: day, duesMoved }
 }
 
 /**

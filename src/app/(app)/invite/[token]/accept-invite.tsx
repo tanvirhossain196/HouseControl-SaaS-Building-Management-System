@@ -14,25 +14,40 @@ export function AcceptInvite({ token }: { token: string }) {
   const [error, setError] = React.useState<string | null>(null)
 
   async function accept() {
+    if (pending) return
+
     setPending(true)
     setError(null)
-    const result = await acceptInviteAction(token)
-    setPending(false)
 
-    if (!result.ok) {
-      setError(result.error)
-      return
+    try {
+      const result = await acceptInviteAction(token)
+
+      if (!result.ok) {
+        setError(result.error)
+        return
+      }
+
+      toast({ tone: 'success', title: 'You are in', body: 'Your dashboard is ready.' })
+      router.push('/dashboard')
+      router.refresh()
+    } catch {
+      setError('We could not accept this invite. Please refresh and try again.')
+    } finally {
+      setPending(false)
     }
-
-    toast({ tone: 'success', title: 'You are in', body: 'Your dashboard is ready.' })
-    router.push('/dashboard')
-    router.refresh()
   }
 
   return (
     <div className="space-y-4">
       <FormError message={error} />
-      <Button size="lg" block loading={pending} onClick={accept}>
+      <Button
+        size="lg"
+        block
+        loading={pending}
+        disabled={pending}
+        aria-busy={pending}
+        onClick={accept}
+      >
         Accept and join
       </Button>
       <p className="text-xs leading-relaxed text-muted">

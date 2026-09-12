@@ -40,7 +40,7 @@ export const en = {
     body: 'HouseControl is the panel your building runs on. Rent and dues, shared bills, repairs and the gate register live in one place, with a separate view for the owner, each flat moderator, every resident and the guard.',
     primary: 'Set up your building',
     secondary: 'See how it works',
-    note: 'Free for one building up to 12 units. No card needed to start.',
+    note: 'Free for one building up to 4 units. No card needed to start.',
   },
 
   panel: {
@@ -115,7 +115,7 @@ export const en = {
     signInTitle: 'Sign in',
     signInSubtitle: 'Your building, your dues, your gate log.',
     signUpTitle: 'Create your account',
-    signUpSubtitle: 'Free for one building up to 12 units. No card needed.',
+    signUpSubtitle: 'Free for one building up to 4 units. No card needed.',
     continueWithGoogle: 'Continue with Google',
     orUseEmail: 'or use email',
     passwordTab: 'Password',

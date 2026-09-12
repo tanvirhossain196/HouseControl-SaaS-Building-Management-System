@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { Scale, SplitSquareHorizontal } from 'lucide-react'
 import { rebalanceSharesAction, saveSharesAction } from '@/app/(app)/flats/actions'
-import { checkShares, splitEqually } from '@/lib/rent-split'
+import { checkShareCapacity, splitEqually } from '@/lib/rent-split'
 import { formatTaka, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,7 +49,8 @@ export function RentSplitEditor({
   }, [residents])
 
   const values = residents.map((resident) => Number(shares[resident.id] ?? 0) || 0)
-  const result = checkShares(values, monthlyRent)
+  const result = checkShareCapacity(values, monthlyRent)
+  const remaining = Math.max(0, monthlyRent - result.total)
   const dirty = residents.some(
     (resident, index) => (values[index] ?? 0) !== resident.rentShare,
   )
@@ -110,7 +111,7 @@ export function RentSplitEditor({
         <div>
           <h3 className="font-semibold text-ink">Rent split</h3>
           <p className="mt-1 text-sm text-muted">
-            Shares have to add up to {formatTaka(monthlyRent)} before they can be saved.
+            Assign shares gradually. They cannot exceed {formatTaka(monthlyRent)}.
           </p>
         </div>
         {canEdit && (
@@ -162,7 +163,7 @@ export function RentSplitEditor({
         )}
         aria-live="polite"
       >
-        <span>{result.ok ? 'Shares add up' : result.message}</span>
+        <span>{result.ok ? `${formatTaka(remaining)} remaining` : result.message}</span>
         <span className="tabular font-mono">
           {formatTaka(result.total)} / {formatTaka(monthlyRent)}
         </span>

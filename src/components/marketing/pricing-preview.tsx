@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { PERIODS } from '@/lib/pricing'
+import { PERIODS, limitsFor } from '@/lib/pricing'
 import { PlanTable } from '@/components/pricing/plan-table'
 import { Section } from './section'
 
@@ -8,11 +8,15 @@ import { Section } from './section'
 export function PricingPreview() {
   const best = PERIODS.reduce((max, period) => Math.max(max, period.discount), 0)
 
+  // Read from the price list rather than written out, so changing a plan's
+  // allowance never leaves the landing page advertising the old number.
+  const freeUnits = limitsFor('free').units
+
   return (
     <Section
       id="pricing"
       heading="Priced per building, not per person"
-      intro={`Free for one building up to 12 units. Plus and Pro add online payments, SMS and reports — with up to ${best}% off if you pay for longer.`}
+      intro={`Free for one building up to ${freeUnits} units. Plus and Pro add online payments, SMS and reports — with up to ${best}% off if you pay for longer.`}
     >
       <PlanTable />
 
