@@ -3,6 +3,7 @@ import { site } from '@/lib/site'
 import { getLocale } from '@/lib/i18n'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { ToastProvider } from '@/components/providers/toast-provider'
+import { ServiceWorker } from '@/components/providers/service-worker'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -31,10 +32,28 @@ export const metadata: Metadata = {
     locale: site.locale,
   },
   twitter: { card: 'summary_large_image' },
-  icons: { icon: '/icon.svg', apple: '/icon.svg' },
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/icons/icon-192.png',
+  },
+
+  /**
+   * Tells iOS to open the installed app without Safari's chrome. Android reads
+   * this from the manifest; iOS still wants it here.
+   */
+  appleWebApp: {
+    capable: true,
+    title: site.name,
+    statusBarStyle: 'black-translucent',
+  },
 }
 
 export const viewport: Viewport = {
+  // Matches the manifest's theme_color, so the installed window and the browser
+  // tab are not two different blues.
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#f6f7fb' },
     { media: '(prefers-color-scheme: dark)', color: '#080f22' },
@@ -79,6 +98,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
+
+        <ServiceWorker />
       </body>
     </html>
   )
