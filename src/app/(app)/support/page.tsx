@@ -19,6 +19,7 @@ import { site } from '@/lib/site'
 import { SUPPORT_PHONE_DISPLAY, telLink, whatsappLink } from '@/lib/whatsapp'
 import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
+import { InstallApp } from '@/components/layout/install-app'
 
 export const metadata = pageMetadata({
   title: 'Support',
@@ -292,7 +293,27 @@ export default async function SupportPage() {
         ))}
       </div>
 
-      <section className="mt-10 flex items-start gap-3 rounded-panel border border-line bg-surface p-5">
+      {/*
+        Placed on Support rather than shouted about on every page. Somebody
+        already using the site in a browser is not being held back by the
+        browser; this is for the person who has decided they use it often enough
+        to want it on their home screen, and that person comes looking.
+      */}
+      <section className="mt-10 rounded-panel border border-line bg-surface p-5">
+        <p className="text-sm font-medium text-ink">Keep it one tap away</p>
+
+        <p className="mt-1 max-w-[64ch] text-sm leading-relaxed text-muted">
+          {site.name} installs like an app on a phone, tablet or computer — its own icon,
+          no browser bar, and pages you have already opened still work without a
+          connection.
+        </p>
+
+        <div className="mt-3">
+          <InstallApp />
+        </div>
+      </section>
+
+      <section className="mt-6 flex items-start gap-3 rounded-panel border border-line bg-surface p-5">
         <LifeBuoy className="mt-0.5 size-5 shrink-0 text-muted" aria-hidden />
 
         <div>

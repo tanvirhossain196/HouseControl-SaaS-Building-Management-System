@@ -12,6 +12,7 @@ import {
 import { footerNav, site } from '@/lib/site'
 import { getTranslations } from '@/lib/i18n'
 import { Logo } from './logo'
+import { InstallApp } from './install-app'
 
 /**
  * The footer.
@@ -65,6 +66,15 @@ export function SiteFooter() {
               {t.footer.tradeLicence}: {site.tradeLicence}
             </li>
           </ul>
+
+          {/*
+            The install offer sits with the brand, not in a link list. It is not
+            a page you can navigate to — it either appears because the browser
+            supports installing, or it renders nothing at all.
+          */}
+          <div className="mt-5">
+            <InstallApp />
+          </div>
 
           <ul className="mt-5 flex gap-2">
             {site.social.map((profile) => {

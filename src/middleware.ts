@@ -46,6 +46,7 @@ const publicPaths = [
   // Reachable with no session, because it is what a signed-out phone with no
   // connection falls back to.
   '/offline',
+  '/download',
   '/sign-in',
   '/sign-up',
   '/forgot-password',

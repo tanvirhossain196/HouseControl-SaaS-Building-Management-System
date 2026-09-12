@@ -28,6 +28,7 @@ export const mainNav = [
   { label: 'Features', href: '/#features' },
   { label: 'How it works', href: '/#how-it-works' },
   { label: 'Pricing', href: '/pricing' },
+  { label: 'Get the app', href: '/download' },
   { label: 'FAQ', href: '/faq' },
   { label: 'About', href: '/about' },
 ] as const
@@ -39,6 +40,7 @@ export const footerNav = [
       { label: 'Features', href: '/#features' },
       { label: 'How it works', href: '/#how-it-works' },
       { label: 'Pricing', href: '/pricing' },
+      { label: 'Get the app', href: '/download' },
       { label: 'FAQ', href: '/faq' },
     ],
   },
